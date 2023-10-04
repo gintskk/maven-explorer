@@ -11,7 +11,7 @@
     <dependencies>
 
         <!-- cops dependencies -->
-        
+
         <dependency>
             <groupId>dev.c0ps</groupId>
             <artifactId>commons-maven</artifactId>

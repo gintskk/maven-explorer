@@ -52,6 +52,8 @@ public class Resolver {
 
     private static final String REPO_CENTRAL = "https://repo.maven.apache.org/maven2/";
     private static final String REPO_CENTRAL_OLD = "https://repo1.maven.org/maven2/";
+    private static final String REPO_CENTRAL_NON_HTTPS = "http://repo.maven.apache.org/maven2/";
+    private static final String REPO_CENTRAL_OLD_NON_HTTPS = "http://repo1.maven.org/maven2/";
 
     // old http://download.java.net/maven/2/ is deprecated, see https://stackoverflow.com/a/22656393/3617482
     private static final MavenRemoteRepository REPO_JAVA_NET = getRepo("java-net", "https://maven.java.net/content/groups/public/");
@@ -109,7 +111,7 @@ public class Resolver {
                     .withMavenCentralRepo(true);
 
             // only add repo if it is different
-            r = addRepoIfNotMatching(r, getRepo(artifactRepository), REPO_CENTRAL, REPO_CENTRAL_OLD);
+            r = addRepoIfNotMatching(r, getRepo(artifactRepository), REPO_CENTRAL, REPO_CENTRAL_OLD, REPO_CENTRAL_NON_HTTPS, REPO_CENTRAL_OLD_NON_HTTPS);
 
             // add replacements for popular repositories that were migrated
             r = addRepoIfNotMatching(r, REPO_JAVA_NET, artifactRepository);
