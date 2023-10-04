@@ -11,6 +11,7 @@
     <modules>
         <module>examples</module>
         <module>maven-crawler</module>
+        <module>maven-downloader</module>
         <module>maven-cleanup</module>
         <module>pom-analyzer</module>
         <module>dependency-graph-resolver</module>

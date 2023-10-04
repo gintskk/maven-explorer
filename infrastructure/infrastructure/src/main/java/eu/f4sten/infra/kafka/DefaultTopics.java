@@ -22,6 +22,7 @@ public class DefaultTopics {
     }
 
     public static final String INGEST = "fasten.mvn.releases";
+    public static final String DOWNLOADS = "fasten.mvn.downloads";
     public static final String POM_ANALYZER = "fasten.POMAnalyzer";
     public static final String CALLABLE_INDEXER = "fasten.CallableIndexFastenPlugin";
     public static final String SOURCES_PROVIDER = "fasten.SourcesProvider";

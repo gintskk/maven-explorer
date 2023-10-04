@@ -18,14 +18,13 @@ package eu.f4sten.loader.impl.kafka;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 
 import org.apache.commons.io.FileUtils;
 
 import dev.c0ps.franz.Lane;
 import dev.c0ps.maveneasyindex.Artifact;
 import eu.f4sten.infra.kafka.LaneManagement;
+import eu.f4sten.infra.utils.MavenRepositoryUtils;
 
 public class FileBasedLaneManagement implements LaneManagement {
 
@@ -66,21 +65,8 @@ public class FileBasedLaneManagement implements LaneManagement {
         write(lNew, f);
     }
 
-    // TODO: Move to MavenRepositoryUtils
     private File f(Artifact a) {
-
-        var parts = new ArrayList<String>();
-        for (var part : a.groupId.split("\\.")) {
-            parts.add(part);
-        }
-        parts.add(a.artifactId);
-        parts.add(a.version);
-        parts.add(a.artifactId + "-" + a.version + ".prio");
-        var elemts = parts.toArray(new String[0]);
-
-        var path = Paths.get(baseDir.getAbsolutePath(), elemts).toFile();
-
-        return path;
+        return MavenRepositoryUtils.getMavenFilePath(baseDir, a, "prio");
     }
 
     private static Lane read(File f) {

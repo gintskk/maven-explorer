@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Delft University of Technology
+ * Copyright 2022 Delft University of Technology
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.f4sten.infra.kafka;
+package eu.f4sten.mavendownloader.data;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+public enum IngestionStatus {
 
-import org.junit.jupiter.api.Test;
+    // requested through depgraph request
+    REQUESTED,
 
-public class DefaultTopicsTest {
+    // existence
+    FOUND,
+    NOT_FOUND,
 
-    @Test
-    public void defaultValues() {
-        assertEquals("fasten.mvn.releases", DefaultTopics.INGEST);
-        assertEquals("fasten.mvn.downloads", DefaultTopics.DOWNLOADS);
-        assertEquals("fasten.POMAnalyzer", DefaultTopics.POM_ANALYZER);
-    }
+    // processing
+    RESOLVED,
+    DEPS_MISSING,
+    DONE,
+    CRASHED
 }

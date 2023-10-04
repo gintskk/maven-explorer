@@ -1,4 +1,4 @@
-FROM openjdk:11.0-jre-slim
+FROM maven:3.9.4-eclipse-temurin-11-alpine
 
 WORKDIR /usr/local/runme
 COPY target/lib lib

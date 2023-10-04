@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.f4sten.infra.kafka;
+package eu.f4sten.mavendownloader;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.io.File;
 
-import org.junit.jupiter.api.Test;
+import com.beust.jcommander.Parameter;
 
-public class DefaultTopicsTest {
+public class MavenDownloaderArgs {
 
-    @Test
-    public void defaultValues() {
-        assertEquals("fasten.mvn.releases", DefaultTopics.INGEST);
-        assertEquals("fasten.mvn.downloads", DefaultTopics.DOWNLOADS);
-        assertEquals("fasten.POMAnalyzer", DefaultTopics.POM_ANALYZER);
-    }
+    @Parameter(names = "--md.workingDir", arity = 1)
+    public File workingDir = new File("/root/");
+
+    @Parameter(names = "--md.mavenHome", arity = 1)
+    public File mavenHome = new File("/opt/local/share/java/maven3/");
 }

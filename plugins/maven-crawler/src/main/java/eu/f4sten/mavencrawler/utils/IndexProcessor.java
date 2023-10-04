@@ -46,8 +46,8 @@ public class IndexProcessor {
 
     public void tryProcessingNextIndices() {
         var nextIdx = store.getNextIndex();
-        LOG.info("Processing index {} ...", nextIdx);
         while (utils.exists(nextIdx)) {
+            LOG.info("Processing index {} ...", nextIdx);
             process(nextIdx);
             store.finish(nextIdx);
             nextIdx++;
