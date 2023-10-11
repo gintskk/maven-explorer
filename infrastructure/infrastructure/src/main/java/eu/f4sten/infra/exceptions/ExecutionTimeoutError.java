@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.f4sten.pomanalyzer.exceptions;
+package eu.f4sten.infra.exceptions;
 
-public class ExecutionTimeoutError extends Error {
+public class ExecutionTimeoutError extends UnrecoverableError {
 
     private static final long serialVersionUID = -8751727696511990784L;
 

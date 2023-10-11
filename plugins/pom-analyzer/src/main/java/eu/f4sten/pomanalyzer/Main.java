@@ -22,11 +22,6 @@ import static java.lang.String.format;
 
 import java.time.Duration;
 import java.util.Date;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +33,8 @@ import dev.c0ps.maven.PomExtractor;
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
 import eu.f4sten.infra.kafka.MessageGenerator;
+import eu.f4sten.infra.utils.TimedExecutor;
 import eu.f4sten.pomanalyzer.data.ResolutionResult;
-import eu.f4sten.pomanalyzer.exceptions.ExecutionTimeoutError;
 import eu.f4sten.pomanalyzer.exceptions.NoArtifactRepositoryException;
 import eu.f4sten.pomanalyzer.utils.DatabaseUtils;
 import eu.f4sten.pomanalyzer.utils.EffectiveModelBuilder;
@@ -52,10 +47,6 @@ import jakarta.inject.Inject;
 public class Main implements Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
-    private static final ExecutorService EXEC = Executors.newSingleThreadExecutor();
-
-    private static final int EXEC_DELAY_MS = 250;
-    private static final int EXECUTION_TIMEOUT_MS = 1000 * 60 * 10; // 10min
 
     private final ProgressTracker tracker;
     private final MavenRepositoryUtils repo;
@@ -67,12 +58,13 @@ public class Main implements Runnable {
     private final PomAnalyzerArgs args;
     private final MessageGenerator msgs;
     private final PackagingFixer fixer;
+    private final TimedExecutor exec;
 
     private final Date startedAt = new Date();
 
     @Inject
     public Main(ProgressTracker tracker, MavenRepositoryUtils repo, EffectiveModelBuilder modelBuilder, PomExtractor extractor, DatabaseUtils db, Resolver resolver, Kafka kafka, PomAnalyzerArgs args,
-            MessageGenerator msgs, PackagingFixer fixer) {
+            MessageGenerator msgs, PackagingFixer fixer, TimedExecutor timedExec) {
         this.tracker = tracker;
         this.repo = repo;
         this.modelBuilder = modelBuilder;
@@ -83,6 +75,7 @@ public class Main implements Runnable {
         this.args = args;
         this.msgs = msgs;
         this.fixer = fixer;
+        this.exec = timedExec;
     }
 
     @Override
@@ -107,30 +100,13 @@ public class Main implements Runnable {
         LOG.info("Consuming next {} record {} ...", lane, toCoordinate(id));
         var artifact = bootstrapFirstResolutionResultFromInput(id);
 
-        var future = EXEC.submit(() -> {
+        var execId = format("%s (%s)", artifact.coordinate, artifact.artifactRepository);
+        exec.run(execId, () -> {
             tracker.startNextOriginal(id);
             tracker.registerRetry(artifact, lane);
             runAndCatch(artifact, lane);
             tracker.pruneRetries(artifact, lane);
         });
-
-        try {
-            future.get(EXECUTION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (TimeoutException e) {
-            var msg = "Execution timeout after %dms: %s (%s)";
-            throw new ExecutionTimeoutError(format(msg, EXECUTION_TIMEOUT_MS, artifact.coordinate, artifact.artifactRepository));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-            var cause = e.getCause();
-            if (cause instanceof Error) {
-                throw (Error) cause;
-            } else if (cause instanceof RuntimeException) {
-                throw (RuntimeException) cause;
-            } else {
-                throw new RuntimeException(cause);
-            }
-        }
     }
 
     private static ResolutionResult bootstrapFirstResolutionResultFromInput(Artifact id) {
@@ -161,7 +137,7 @@ public class Main implements Runnable {
         var duration = Duration.between(startedAt.toInstant(), new Date().toInstant());
         var msg = "Processing {} ... (dependency of: {}, started at: {}, running for: {})";
         LOG.info(msg, artifact.coordinate, toCoordinate(tracker.getCurrentOriginal()), startedAt, duration);
-        delayExecutionToPreventThrottling();
+        exec.delayExecution();
 
         var consumedAt = new Date();
         kafka.sendHeartbeat();
@@ -217,13 +193,5 @@ public class Main implements Runnable {
         var m = msgs.getStd(result);
         m.consumedAt = consumedAt;
         kafka.publish(m, args.kafkaOut, lane);
-    }
-
-    private static void delayExecutionToPreventThrottling() {
-        try {
-            Thread.sleep(EXEC_DELAY_MS);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        }
     }
 }

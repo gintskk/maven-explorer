@@ -47,4 +47,10 @@ public class InfraArgs {
 
     @Parameter(names = "--http.baseUrl", arity = 1, description = "base url of http servlets")
     public String httpBaseUrl = "/";
+
+    @Parameter(names = "--exec.timeoutMS", arity = 1, description = "timeout for a timed execution")
+    public int execTimeoutMS = 1000 * 60 * 5; // 5min
+
+    @Parameter(names = "--exec.delayMS", arity = 1, description = "execution delay in a timed execution")
+    public int execDelayMS = 0;
 }

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.maven.PomExtractor;
 import eu.f4sten.infra.kafka.MessageGenerator;
+import eu.f4sten.infra.utils.TimedExecutor;
 import eu.f4sten.pomanalyzer.utils.DatabaseUtils;
 import eu.f4sten.pomanalyzer.utils.EffectiveModelBuilder;
 import eu.f4sten.pomanalyzer.utils.MavenRepositoryUtils;
@@ -41,6 +42,7 @@ public class MainTest {
     private PomAnalyzerArgs args;
     private MessageGenerator msgs;
     private PackagingFixer fixer;
+    private TimedExecutor exec;
 
     private Main sut;
     private ProgressTracker tracker;
@@ -57,8 +59,9 @@ public class MainTest {
         args = new PomAnalyzerArgs();
         msgs = mock(MessageGenerator.class);
         fixer = mock(PackagingFixer.class);
+        exec = mock(TimedExecutor.class);
 
-        sut = new Main(tracker, repo, modelBuilder, extractor, db, resolver, kafka, args, msgs, fixer);
+        sut = new Main(tracker, repo, modelBuilder, extractor, db, resolver, kafka, args, msgs, fixer, exec);
 
 //        when(extractor.process(eq(null))).thenReturn(new Pom());
 //        when(extractor.process(any(Model.class))).thenReturn(new Pom());

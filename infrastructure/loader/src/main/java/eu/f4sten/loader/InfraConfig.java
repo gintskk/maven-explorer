@@ -54,6 +54,7 @@ import eu.f4sten.loader.impl.kafka.MessageGeneratorImpl;
 import eu.f4sten.loader.impl.utils.HostNameImpl;
 import eu.f4sten.loader.impl.utils.PostgresConnectorImpl;
 import eu.f4sten.loader.impl.utils.VersionImpl;
+import jakarta.inject.Named;
 
 @InjectorConfig
 public class InfraConfig implements IInjectorConfig {
@@ -145,5 +146,17 @@ public class InfraConfig implements IInjectorConfig {
 
         return new ObjectMapperBuilder().build() //
                 .registerModules(modules);
+    }
+
+    @Provides
+    @Named("TimedExecutor.timeoutMS")
+    public int bindExecTimeout() {
+        return args.execTimeoutMS;
+    }
+
+    @Provides
+    @Named("TimedExecutor.delayMS")
+    public int bindExecDelay() {
+        return args.execDelayMS;
     }
 }
