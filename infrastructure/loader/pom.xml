@@ -32,7 +32,7 @@
         <dependency>
             <groupId>dev.c0ps.diapper</groupId>
             <artifactId>runner</artifactId>
-            <version>0.0.3</version>
+            <version>${version.diapper}</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.libhttpd</groupId>

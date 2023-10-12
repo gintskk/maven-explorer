@@ -21,6 +21,15 @@
     <properties>
         <!-- automatically set through: mvn versions:set -DupdateBuildOutputTimestampPolicy=always -DnewVersion=... -->
         <project.build.outputTimestamp>2023-09-14T01:37:29Z</project.build.outputTimestamp>
+
+        <!-- cops versions -->
+        <version.diapper>0.0.4</version.diapper>
+        <version.commons>0.0.6</version.commons>
+        <version.io>0.0.2</version.io>
+        <version.franz>0.0.4</version.franz>
+        <version.maven-easy-index>0.0.8</version.maven-easy-index>
+        <version.libhttpd>0.0.2</version.libhttpd>
+        <version.testutils>0.0.6</version.testutils>
     </properties>
 
     <repositories>
@@ -34,13 +43,12 @@
         </repository>
     </repositories>
 
-    <!-- common dependencies -->
     <dependencies>
         <!-- general app composition -->
         <dependency>
             <groupId>dev.c0ps.diapper</groupId>
             <artifactId>api</artifactId>
-            <version>0.0.3</version>
+            <version>${version.diapper}</version>
         </dependency>
         <!-- logging -->
         <dependency>
@@ -58,14 +66,14 @@
         <dependency>
             <groupId>dev.c0ps.libhttpd</groupId>
             <artifactId>api</artifactId>
-            <version>0.0.2</version>
+            <version>${version.libhttpd}</version>
         </dependency>
 
         <!-- test  -->
         <dependency>
             <groupId>dev.c0ps</groupId>
             <artifactId>test-utils</artifactId>
-            <version>0.0.5</version>
+            <version>${version.testutils}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

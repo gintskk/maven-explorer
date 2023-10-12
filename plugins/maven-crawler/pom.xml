@@ -19,7 +19,7 @@
         <dependency>
             <groupId>dev.c0ps.maven-easy-index</groupId>
             <artifactId>data</artifactId>
-            <version>0.0.1</version>
+            <version>${version.maven-easy-index}</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>

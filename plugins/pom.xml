@@ -24,19 +24,24 @@
         <dependency>
             <groupId>dev.c0ps.franz</groupId>
             <artifactId>api</artifactId>
-            <version>0.0.2</version>
+            <version>${version.franz}</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.diapper</groupId>
             <artifactId>api</artifactId>
-            <version>0.0.3</version>
+            <version>${version.diapper}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.maven-easy-index</groupId>
+            <artifactId>data</artifactId>
+            <version>${version.maven-easy-index}</version>
         </dependency>
 
         <!-- required annotations for servlets (served through HttpServerImpl) -->
         <dependency>
             <groupId>dev.c0ps.libhttpd</groupId>
             <artifactId>api</artifactId>
-            <version>0.0.2</version>
+            <version>${version.libhttpd}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.ws.rs</groupId>
@@ -44,4 +49,26 @@
             <version>3.1.0</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>search-for-unused-or-undeclared-deps</id>
+                            <configuration>
+                                <ignoredUnusedDeclaredDependencies combine.children="append">
+                                    <!-- Artifact is the core data structure that is used virtually everywhere -->
+                                    <ignoredUnusedDeclaredDependency>dev.c0ps.maven-easy-index:data</ignoredUnusedDeclaredDependency>
+                                </ignoredUnusedDeclaredDependencies>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

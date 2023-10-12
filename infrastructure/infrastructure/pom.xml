@@ -10,10 +10,49 @@
 
     <dependencies>
         <dependency>
+            <groupId>dev.c0ps.diapper</groupId>
+            <artifactId>api</artifactId>
+            <version>${version.diapper}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.io</groupId>
+            <artifactId>api</artifactId>
+            <version>${version.io}</version>
+        </dependency>
+        <dependency>
             <groupId>dev.c0ps.io</groupId>
             <artifactId>impl</artifactId>
-            <version>0.0.2</version>
+            <version>${version.io}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.libhttpd</groupId>
+            <artifactId>api</artifactId>
+            <version>${version.libhttpd}</version>
+        </dependency>
+
+        <dependency>
+            <!-- please note that extensions (e.g., the Java 8 Module) only need to be added to the infrastructure-impl project -->
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.15.2</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.13.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.13.0</version>
+        </dependency>
+
+        <!-- required annotations for servlets (served through HttpServerImpl) -->
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <version>3.1.0</version>
         </dependency>
     </dependencies>
 </project>
