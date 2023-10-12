@@ -58,32 +58,7 @@
         </dependency>
         <dependency>
             <groupId>eu.fasten-project</groupId>
-            <artifactId>callable-indexer</artifactId>
-            <version>0.0.19-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.fasten-project</groupId>
             <artifactId>dependency-graph-resolver</artifactId>
-            <version>0.0.19-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.fasten-project</groupId>
-            <artifactId>integration-tests</artifactId>
-            <version>0.0.19-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.fasten-project</groupId>
-            <artifactId>ingested-artifact-completion</artifactId>
-            <version>0.0.19-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.fasten-project</groupId>
-            <artifactId>sources-provider</artifactId>
-            <version>0.0.19-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.fasten-project</groupId>
-            <artifactId>swh-inserter</artifactId>
             <version>0.0.19-SNAPSHOT</version>
         </dependency>
     </dependencies>
