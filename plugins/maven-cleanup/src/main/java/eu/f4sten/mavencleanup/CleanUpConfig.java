@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.f4sten.pomanalyzer;
+package eu.f4sten.mavencleanup;
 
 import com.google.inject.Binder;
 
@@ -21,16 +21,16 @@ import dev.c0ps.diapper.IInjectorConfig;
 import dev.c0ps.diapper.InjectorConfig;
 
 @InjectorConfig
-public class CleanUpM2RepositoryInjectorConfig implements IInjectorConfig {
+public class CleanUpConfig implements IInjectorConfig {
 
-    private CleanUpM2RepositoryArgs args;
+    private CleanUpArgs args;
 
-    public CleanUpM2RepositoryInjectorConfig(CleanUpM2RepositoryArgs args) {
+    public CleanUpConfig(CleanUpArgs args) {
         this.args = args;
     }
 
     @Override
     public void configure(Binder binder) {
-        binder.bind(CleanUpM2RepositoryArgs.class).toInstance(args);
+        binder.bind(CleanUpArgs.class).toInstance(args);
     }
 }

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.f4sten.pomanalyzer;
+package eu.f4sten.mavencleanup;
 
 import com.beust.jcommander.Parameter;
 
-public class CleanUpM2RepositoryArgs {
+public class CleanUpArgs {
 
     @Parameter(names = "--path.m2", arity = 1)
     public String pathM2 = "~/.m2/repository";

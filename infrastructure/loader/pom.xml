@@ -92,6 +92,11 @@
         </dependency>
         <dependency>
             <groupId>eu.fasten-project</groupId>
+            <artifactId>maven-cleanup</artifactId>
+            <version>0.0.19-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.fasten-project</groupId>
             <artifactId>pom-analyzer</artifactId>
             <version>0.0.19-SNAPSHOT</version>
         </dependency>
@@ -119,6 +124,7 @@
                                 <ignoredUnusedDeclaredDependency>eu.fasten-project:maven-crawler</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>eu.fasten-project:pom-analyzer</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>eu.fasten-project:dependency-graph-resolver</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>eu.fasten-project:maven-cleanup</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                             <ignoredDependencies combine.children="append">
                                 <ignoredDependency>org.apache.kafka:kafka-clients</ignoredDependency>

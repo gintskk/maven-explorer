@@ -11,6 +11,7 @@
     <modules>
         <module>examples</module>
         <module>maven-crawler</module>
+        <module>maven-cleanup</module>
         <module>pom-analyzer</module>
         <module>dependency-graph-resolver</module>
     </modules>
@@ -61,7 +62,9 @@
                             <id>search-for-unused-or-undeclared-deps</id>
                             <configuration>
                                 <ignoredUnusedDeclaredDependencies combine.children="append">
-                                    <!-- Artifact is the core data structure that is used virtually everywhere -->
+                                    <!-- basic dependencies that are supposed to be used in most plugins -->
+                                    <ignoredUnusedDeclaredDependency>eu.fasten-project:infrastructure</ignoredUnusedDeclaredDependency>
+                                    <ignoredUnusedDeclaredDependency>dev.c0ps.franz:api</ignoredUnusedDeclaredDependency>
                                     <ignoredUnusedDeclaredDependency>dev.c0ps.maven-easy-index:data</ignoredUnusedDeclaredDependency>
                                 </ignoredUnusedDeclaredDependencies>
                             </configuration>

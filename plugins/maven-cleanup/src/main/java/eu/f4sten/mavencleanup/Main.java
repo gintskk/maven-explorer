@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.f4sten.pomanalyzer;
+package eu.f4sten.mavencleanup;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,13 +29,13 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.inject.Inject;
 
-public class CleanUpM2Repository implements Runnable {
+public class Main implements Runnable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CleanUpM2Repository.class);
-    private final CleanUpM2RepositoryArgs args;
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+    private final CleanUpArgs args;
 
     @Inject
-    public CleanUpM2Repository(CleanUpM2RepositoryArgs args) {
+    public Main(CleanUpArgs args) {
         this.args = args;
     }
 
