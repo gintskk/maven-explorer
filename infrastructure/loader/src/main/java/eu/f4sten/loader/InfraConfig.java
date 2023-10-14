@@ -46,10 +46,13 @@ import dev.c0ps.libhttpd.HttpServer;
 import dev.c0ps.libhttpd.HttpServerGracefulShutdownThread;
 import dev.c0ps.libhttpd.HttpServerImpl;
 import dev.c0ps.maven.json.CommonsMavenDataModule;
+import dev.c0ps.maveneasyindex.ArtifactModule;
+import eu.f4sten.infra.kafka.LaneManagement;
 import eu.f4sten.infra.kafka.MessageGenerator;
 import eu.f4sten.infra.utils.HostName;
 import eu.f4sten.infra.utils.PostgresConnector;
 import eu.f4sten.infra.utils.Version;
+import eu.f4sten.loader.impl.kafka.FileBasedLaneManagement;
 import eu.f4sten.loader.impl.kafka.MessageGeneratorImpl;
 import eu.f4sten.loader.impl.utils.HostNameImpl;
 import eu.f4sten.loader.impl.utils.PostgresConnectorImpl;
@@ -135,8 +138,13 @@ public class InfraConfig implements IInjectorConfig {
     }
 
     @ProvidesIntoSet
-    public Module provideCoreMavenDataModule() {
+    public Module provideCommonsMavenDataModule() {
         return new CommonsMavenDataModule();
+    }
+
+    @ProvidesIntoSet
+    public Module provideArtifactModule() {
+        return new ArtifactModule();
     }
 
     @Provides
@@ -158,5 +166,13 @@ public class InfraConfig implements IInjectorConfig {
     @Named("TimedExecutor.delayMS")
     public int bindExecDelay() {
         return args.execDelayMS;
+    }
+
+    @Provides
+    public LaneManagement provideLaneManegement() {
+        assertFor(args) //
+                .notNull(args -> args.dirLanes, "lane dir") //
+                .that(args -> args.dirLanes.exists(), "lane dir does not exist");
+        return new FileBasedLaneManagement(args.dirLanes);
     }
 }

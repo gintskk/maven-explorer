@@ -30,6 +30,9 @@ public class InfraArgs {
     @Parameter(names = "--baseDir", arity = 1, description = "Base folder for all file-based operations")
     public File baseDir;
 
+    @Parameter(names = "--dir.lanes", arity = 1, description = "Folder for all marker files of lane-management")
+    public File dirLanes;
+
     @Parameter(names = "--kafka.url", arity = 1, description = "address for the Kafka Server")
     public String kafkaUrl;
 

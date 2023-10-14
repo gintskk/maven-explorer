@@ -26,6 +26,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>dev.c0ps.franz</groupId>
+            <artifactId>api</artifactId>
+            <version>${version.franz}</version>
+        </dependency>
+        <dependency>
             <groupId>dev.c0ps.libhttpd</groupId>
             <artifactId>api</artifactId>
             <version>${version.libhttpd}</version>

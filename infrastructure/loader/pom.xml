@@ -37,7 +37,7 @@
         <dependency>
             <groupId>dev.c0ps.libhttpd</groupId>
             <artifactId>impl</artifactId>
-            <version>0.0.2</version>
+            <version>${version.libhttpd}</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -47,7 +47,7 @@
         <dependency>
             <groupId>dev.c0ps.diapper</groupId>
             <artifactId>api</artifactId>
-            <version>0.0.3</version>
+            <version>${version.diapper}</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps</groupId>
@@ -57,7 +57,17 @@
         <dependency>
             <groupId>dev.c0ps.io</groupId>
             <artifactId>impl</artifactId>
-            <version>0.0.2</version>
+            <version>${version.io}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.13.0</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.maven-easy-index</groupId>
+            <artifactId>data</artifactId>
+            <version>${version.maven-easy-index}</version>
         </dependency>
 
         <!-- kafka -->
@@ -65,12 +75,12 @@
         <dependency>
             <groupId>dev.c0ps.franz</groupId>
             <artifactId>api</artifactId>
-            <version>0.0.2</version>
+            <version>${version.franz}</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.franz</groupId>
             <artifactId>impl</artifactId>
-            <version>0.0.2</version>
+            <version>${version.franz}</version>
         </dependency>
 
         <!-- plugins -->
