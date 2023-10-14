@@ -45,7 +45,10 @@ public class MavenDownloaderInjectorConfig extends InjectorConfigBase {
 
     @Provides
     public IngestionDatabase provideIngestionDatabase(Version v, IoUtils io) {
-        return new FileBasedIngestionDatabase(v, io);
+        assertFor(args) //
+                .notNull(a -> a.dirIngestionDb, "ingestion db folder") //
+                .that(a -> a.dirIngestionDb.exists(), "ingestion db folder does not exist");
+        return new FileBasedIngestionDatabase(v, io, args.dirIngestionDb);
     }
 
     @Provides

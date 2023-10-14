@@ -21,9 +21,12 @@ import com.beust.jcommander.Parameter;
 
 public class MavenDownloaderArgs {
 
-    @Parameter(names = "--md.workingDir", arity = 1)
+    @Parameter(names = "--md.dir.ingestiondb", arity = 1, description = "Folder for all marker files of the ingestion database")
+    public File dirIngestionDb;
+
+    @Parameter(names = "--md.dir.work", arity = 1)
     public File workingDir = new File("/root/");
 
-    @Parameter(names = "--md.mavenHome", arity = 1)
+    @Parameter(names = "--md.dir.mavenHome", arity = 1)
     public File mavenHome = new File("/opt/local/share/java/maven3/");
 }

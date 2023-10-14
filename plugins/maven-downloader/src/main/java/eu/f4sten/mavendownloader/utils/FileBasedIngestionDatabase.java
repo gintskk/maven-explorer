@@ -31,6 +31,7 @@ import eu.f4sten.infra.utils.Version;
 import eu.f4sten.mavendownloader.data.IngestionData;
 import eu.f4sten.mavendownloader.data.IngestionStatus;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 public class FileBasedIngestionDatabase implements IngestionDatabase {
 
@@ -39,10 +40,10 @@ public class FileBasedIngestionDatabase implements IngestionDatabase {
     private final File baseDir;
 
     @Inject
-    public FileBasedIngestionDatabase(Version toolVersion, IoUtils io) {
+    public FileBasedIngestionDatabase(Version toolVersion, IoUtils io, @Named("IngestionDatabase.baseDir") File baseDir) {
         this.toolVersion = toolVersion;
         this.io = io;
-        this.baseDir = io.getBaseFolder();
+        this.baseDir = baseDir;
     }
 
     @Override

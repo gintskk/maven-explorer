@@ -61,8 +61,6 @@ public class FileBasedIngestionDatabaseTest {
     @BeforeEach
     public void setup() {
         io = mock(IoUtils.class);
-        when(io.getBaseFolder()).thenReturn(tempDir);
-
         var v = mock(Version.class);
         when(v.get()).thenAnswer(new Answer<String>() {
             @Override
@@ -71,14 +69,13 @@ public class FileBasedIngestionDatabaseTest {
             }
         });
         toolVersion = "1.2.3";
-        sut = new FileBasedIngestionDatabase(v, io);
+        sut = new FileBasedIngestionDatabase(v, io, tempDir);
     }
 
     @Test
     public void unknownIsNull() {
         var actual = sut.getCurrentResult(a(1));
         assertNull(actual);
-        verify(io).getBaseFolder();
         verifyNoMoreInteractions(io);
     }
 
