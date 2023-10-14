@@ -38,6 +38,7 @@ import org.mockito.stubbing.Answer;
 
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maven.data.PomBuilder;
+import eu.f4sten.infra.utils.MavenRepositoryUtils;
 
 public class PackagingFixerTest {
 

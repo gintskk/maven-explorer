@@ -24,7 +24,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import eu.f4sten.pomanalyzer.utils.MavenRepositoryUtils;
+import eu.f4sten.pomanalyzer.utils.MavenSettingsUtils;
 
 public class ResolutionResult {
 
@@ -58,7 +58,7 @@ public class ResolutionResult {
     }
 
     protected File getLocalM2Repository() {
-        return MavenRepositoryUtils.getPathOfLocalRepository();
+        return MavenSettingsUtils.getPathOfLocalRepository();
     }
 
     public File getLocalPackageFile() {
@@ -86,8 +86,7 @@ public class ResolutionResult {
         var g = parts[0];
         var a = parts[1];
         var v = parts[3];
-        var path = pathM2.getAbsolutePath() + File.separatorChar + g.replace('.', File.separatorChar)
-                + File.separatorChar + a + File.separatorChar + v + File.separatorChar + a + "-" + v + ".pom";
+        var path = pathM2.getAbsolutePath() + File.separatorChar + g.replace('.', File.separatorChar) + File.separatorChar + a + File.separatorChar + v + File.separatorChar + a + "-" + v + ".pom";
         return new File(path);
     }
 

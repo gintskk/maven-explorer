@@ -16,8 +16,8 @@
 package eu.f4sten.pomanalyzer;
 
 import static dev.c0ps.maven.MavenUtilities.MAVEN_CENTRAL_REPO;
+import static eu.f4sten.infra.utils.MavenRepositoryUtils.checkGetRequest;
 import static eu.f4sten.pomanalyzer.data.Coordinates.toCoordinate;
-import static eu.f4sten.pomanalyzer.utils.MavenRepositoryUtils.checkGetRequest;
 import static java.lang.String.format;
 
 import java.time.Duration;
@@ -33,12 +33,12 @@ import dev.c0ps.maven.PomExtractor;
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
 import eu.f4sten.infra.kafka.MessageGenerator;
+import eu.f4sten.infra.utils.MavenRepositoryUtils;
 import eu.f4sten.infra.utils.TimedExecutor;
 import eu.f4sten.pomanalyzer.data.ResolutionResult;
 import eu.f4sten.pomanalyzer.exceptions.NoArtifactRepositoryException;
 import eu.f4sten.pomanalyzer.utils.DatabaseUtils;
 import eu.f4sten.pomanalyzer.utils.EffectiveModelBuilder;
-import eu.f4sten.pomanalyzer.utils.MavenRepositoryUtils;
 import eu.f4sten.pomanalyzer.utils.PackagingFixer;
 import eu.f4sten.pomanalyzer.utils.ProgressTracker;
 import eu.f4sten.pomanalyzer.utils.Resolver;
@@ -157,8 +157,6 @@ public class Main implements Runnable {
 
         // packagingType is often bogus, check and possibly fix
         result.packagingType = fixer.checkPackage(result.pom());
-        result.sourcesUrl = repo.getSourceUrlIfExisting(result.pom());
-        result.releaseDate = repo.getReleaseDate(result.pom());
 
         store(result.pom(), lane, consumedAt);
 

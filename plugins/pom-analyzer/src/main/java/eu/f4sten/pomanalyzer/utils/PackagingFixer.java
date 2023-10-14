@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.c0ps.maven.data.Pom;
+import eu.f4sten.infra.utils.MavenRepositoryUtils;
 import jakarta.inject.Inject;
 
 public class PackagingFixer {

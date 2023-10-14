@@ -32,11 +32,6 @@
             <artifactId>api</artifactId>
             <version>${version.diapper}</version>
         </dependency>
-        <dependency>
-            <groupId>dev.c0ps.maven-easy-index</groupId>
-            <artifactId>data</artifactId>
-            <version>${version.maven-easy-index}</version>
-        </dependency>
 
         <!-- required annotations for servlets (served through HttpServerImpl) -->
         <dependency>
@@ -65,8 +60,10 @@
                                     <!-- basic dependencies that are supposed to be used in most plugins -->
                                     <ignoredUnusedDeclaredDependency>eu.fasten-project:infrastructure</ignoredUnusedDeclaredDependency>
                                     <ignoredUnusedDeclaredDependency>dev.c0ps.franz:api</ignoredUnusedDeclaredDependency>
-                                    <ignoredUnusedDeclaredDependency>dev.c0ps.maven-easy-index:data</ignoredUnusedDeclaredDependency>
                                 </ignoredUnusedDeclaredDependencies>
+                                <ignoredDependencies combine.children="append">
+                                    <ignoredDependency>dev.c0ps:commons</ignoredDependency>
+                                </ignoredDependencies>
                             </configuration>
                         </execution>
                     </executions>

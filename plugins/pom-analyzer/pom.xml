@@ -91,11 +91,6 @@
             <artifactId>okhttp</artifactId>
             <version>4.9.2</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore</artifactId>
-            <version>4.4.16</version>
-        </dependency>
 
         <!-- metadata db -->
         <dependency>
@@ -113,14 +108,6 @@
             <groupId>com.github.t9t.jooq</groupId>
             <artifactId>jooq-postgresql-json</artifactId>
             <version>4.0.0</version>
-        </dependency>
-
-        <!-- test dependencies -->
-        <dependency>
-            <groupId>org.javastack</groupId>
-            <artifactId>httpd</artifactId>
-            <version>1.1.2</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

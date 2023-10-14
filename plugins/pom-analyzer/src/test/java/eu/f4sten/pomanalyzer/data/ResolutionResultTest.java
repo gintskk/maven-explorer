@@ -15,7 +15,6 @@
  */
 package eu.f4sten.pomanalyzer.data;
 
-import static eu.f4sten.pomanalyzer.utils.MavenRepositoryUtils.getPathOfLocalRepository;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -29,7 +28,7 @@ import java.security.InvalidParameterException;
 
 import org.junit.jupiter.api.Test;
 
-import eu.f4sten.pomanalyzer.utils.MavenRepositoryUtils;
+import eu.f4sten.pomanalyzer.utils.MavenSettingsUtils;
 
 public class ResolutionResultTest {
 
@@ -42,7 +41,7 @@ public class ResolutionResultTest {
 
         assertEquals(gapv, sut.coordinate);
         assertEquals(SOME_REPO, sut.artifactRepository);
-        assertEquals(getPathOfLocalRepository(), sut.localM2Repository);
+        assertEquals(MavenSettingsUtils.getPathOfLocalRepository(), sut.localM2Repository);
         assertEquals(inM2("g", "a", "1", "a-1.pom"), sut.localPomFile);
         assertEquals(inM2("g", "a", "1", "a-1.jar"), sut.getLocalPackageFile());
     }
@@ -112,7 +111,7 @@ public class ResolutionResultTest {
     }
 
     private static File inM2(String... pathToFilename) {
-        var m2 = MavenRepositoryUtils.getPathOfLocalRepository().getAbsolutePath();
+        var m2 = MavenSettingsUtils.getPathOfLocalRepository().getAbsolutePath();
         return Path.of(m2, pathToFilename).toFile();
     }
 }

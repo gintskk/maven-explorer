@@ -30,6 +30,21 @@
             <artifactId>api</artifactId>
             <version>${version.libhttpd}</version>
         </dependency>
+        <dependency>
+            <groupId>dev.c0ps</groupId>
+            <artifactId>commons</artifactId>
+            <version>${version.commons}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.maven-easy-index</groupId>
+            <artifactId>data</artifactId>
+            <version>${version.maven-easy-index}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps</groupId>
+            <artifactId>commons-maven</artifactId>
+            <version>0.0.1</version>
+        </dependency>
 
         <dependency>
             <!-- please note that extensions (e.g., the Java 8 Module) only need to be added to the infrastructure-impl project -->

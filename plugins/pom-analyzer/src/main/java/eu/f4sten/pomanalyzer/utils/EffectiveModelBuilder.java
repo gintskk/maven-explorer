@@ -27,7 +27,7 @@ import fr.inria.spirals.repairnator.process.maven.RepositoryModelResolver;
 
 public class EffectiveModelBuilder {
 
-    public static final File LOCAL_M2 = MavenRepositoryUtils.getPathOfLocalRepository();
+    public static final File LOCAL_M2 = MavenSettingsUtils.getPathOfLocalRepository();
 
     public Model buildEffectiveModel(File pom) {
 
