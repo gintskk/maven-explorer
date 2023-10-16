@@ -17,6 +17,7 @@ package eu.f4sten.loader;
 
 import static dev.c0ps.diapper.AssertArgs.assertFor;
 
+import java.io.File;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 
+import dev.c0ps.diapper.AssertArgs;
 import dev.c0ps.diapper.IInjectorConfig;
 import dev.c0ps.diapper.InjectorConfig;
 import dev.c0ps.diapper.RunnerArgs;
@@ -150,6 +152,13 @@ public class InfraConfig implements IInjectorConfig {
     @Named("TimedExecutor.delayMS")
     public int bindExecDelay() {
         return args.execDelayMS;
+    }
+
+    @Provides
+    @Named("dir.m2")
+    public File bindDirM2() {
+        AssertArgs.directoryExists(args, a -> a.dirM2, ".m2 folder");
+        return args.dirM2;
     }
 
     @Provides

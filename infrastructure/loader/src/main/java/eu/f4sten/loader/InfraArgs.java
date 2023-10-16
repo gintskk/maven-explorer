@@ -17,6 +17,8 @@ package eu.f4sten.loader;
 
 import java.io.File;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import com.beust.jcommander.Parameter;
 
 public class InfraArgs {
@@ -26,6 +28,9 @@ public class InfraArgs {
 
     @Parameter(names = "--dir.lanes", arity = 1, description = "Folder for all marker files of lane-management")
     public File dirLanes;
+
+    @Parameter(names = "--dir.m2", arity = 1, description = "Folder for the local .m2 folder (usually '«home»/.m2/')")
+    public File dirM2 = new File(SystemUtils.getUserHome(), ".m2");
 
     @Parameter(names = "--kafka.url", arity = 1, description = "address for the Kafka Server")
     public String kafkaUrl;
