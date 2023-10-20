@@ -20,12 +20,6 @@
             <version>${version.io}</version>
         </dependency>
         <dependency>
-            <groupId>dev.c0ps.io</groupId>
-            <artifactId>impl</artifactId>
-            <version>${version.io}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>dev.c0ps.franz</groupId>
             <artifactId>api</artifactId>
             <version>${version.franz}</version>

@@ -48,11 +48,9 @@ import dev.c0ps.libhttpd.HttpServerImpl;
 import dev.c0ps.maven.json.CommonsMavenDataModule;
 import dev.c0ps.maveneasyindex.ArtifactModule;
 import eu.f4sten.infra.kafka.LaneManagement;
-import eu.f4sten.infra.kafka.MessageGenerator;
 import eu.f4sten.infra.utils.HostName;
 import eu.f4sten.infra.utils.Version;
 import eu.f4sten.loader.impl.kafka.FileBasedLaneManagement;
-import eu.f4sten.loader.impl.kafka.MessageGeneratorImpl;
 import eu.f4sten.loader.impl.utils.HostNameImpl;
 import eu.f4sten.loader.impl.utils.VersionImpl;
 import jakarta.inject.Named;
@@ -73,7 +71,6 @@ public class InfraConfig implements IInjectorConfig {
         binder.bind(InfraArgs.class).toInstance(args);
         binder.bind(HostName.class).to(HostNameImpl.class);
         binder.bind(Version.class).to(VersionImpl.class);
-        binder.bind(MessageGenerator.class).to(MessageGeneratorImpl.class);
     }
 
     @Provides

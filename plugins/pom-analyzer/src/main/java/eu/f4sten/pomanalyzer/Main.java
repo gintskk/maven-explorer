@@ -32,7 +32,6 @@ import dev.c0ps.franz.Lane;
 import dev.c0ps.maven.PomExtractor;
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
-import eu.f4sten.infra.kafka.MessageGenerator;
 import eu.f4sten.infra.utils.MavenRepositoryUtils;
 import eu.f4sten.infra.utils.TimedExecutor;
 import eu.f4sten.pomanalyzer.data.ResolutionResult;
@@ -56,7 +55,6 @@ public class Main implements Runnable {
     private final Resolver resolver;
     private final Kafka kafka;
     private final PomAnalyzerArgs args;
-    private final MessageGenerator msgs;
     private final PackagingFixer fixer;
     private final TimedExecutor exec;
 
@@ -64,7 +62,7 @@ public class Main implements Runnable {
 
     @Inject
     public Main(ProgressTracker tracker, MavenRepositoryUtils repo, EffectiveModelBuilder modelBuilder, PomExtractor extractor, DatabaseUtils db, Resolver resolver, Kafka kafka, PomAnalyzerArgs args,
-            MessageGenerator msgs, PackagingFixer fixer, TimedExecutor timedExec) {
+            PackagingFixer fixer, TimedExecutor timedExec) {
         this.tracker = tracker;
         this.repo = repo;
         this.modelBuilder = modelBuilder;
@@ -73,7 +71,6 @@ public class Main implements Runnable {
         this.resolver = resolver;
         this.kafka = kafka;
         this.args = args;
-        this.msgs = msgs;
         this.fixer = fixer;
         this.exec = timedExec;
     }
@@ -128,7 +125,8 @@ public class Main implements Runnable {
             boolean isRuntimeExceptionAndNoSubtype = RuntimeException.class.equals(e.getClass());
             boolean isWrapped = isRuntimeExceptionAndNoSubtype && e.getCause() != null;
 
-            var msg = msgs.getErr(tracker.getCurrentOriginal(), isWrapped ? e.getCause() : e);
+            // FIXME
+            var msg = "TODO";
             kafka.publish(msg, args.kafkaOut, Lane.ERROR);
         }
     }
@@ -188,8 +186,8 @@ public class Main implements Runnable {
             return;
         }
         db.save(result);
-        var m = msgs.getStd(result);
-        m.consumedAt = consumedAt;
+        // FIXME
+        var m = "TODO";
         kafka.publish(m, args.kafkaOut, lane);
     }
 }

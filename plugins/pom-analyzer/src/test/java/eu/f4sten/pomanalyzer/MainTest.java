@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.maven.PomExtractor;
-import eu.f4sten.infra.kafka.MessageGenerator;
 import eu.f4sten.infra.utils.MavenRepositoryUtils;
 import eu.f4sten.infra.utils.TimedExecutor;
 import eu.f4sten.pomanalyzer.utils.DatabaseUtils;
@@ -40,7 +39,6 @@ public class MainTest {
     private Resolver resolver;
     private Kafka kafka;
     private PomAnalyzerArgs args;
-    private MessageGenerator msgs;
     private PackagingFixer fixer;
     private TimedExecutor exec;
 
@@ -57,11 +55,10 @@ public class MainTest {
         resolver = mock(Resolver.class);
         kafka = mock(Kafka.class);
         args = new PomAnalyzerArgs();
-        msgs = mock(MessageGenerator.class);
         fixer = mock(PackagingFixer.class);
         exec = mock(TimedExecutor.class);
 
-        sut = new Main(tracker, repo, modelBuilder, extractor, db, resolver, kafka, args, msgs, fixer, exec);
+        sut = new Main(tracker, repo, modelBuilder, extractor, db, resolver, kafka, args, fixer, exec);
 
 //        when(extractor.process(eq(null))).thenReturn(new Pom());
 //        when(extractor.process(any(Model.class))).thenReturn(new Pom());

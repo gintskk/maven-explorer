@@ -33,8 +33,9 @@ import dev.c0ps.maven.MavenUtilities;
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maven.resolution.MavenResolverData;
 import dev.c0ps.maven.rest.DependencyGraphResolutionService;
+import dev.c0ps.maveneasyindex.Artifact;
 import eu.f4sten.infra.kafka.DefaultTopics;
-import eu.f4sten.infra.kafka.Message;
+import eu.f4sten.mavendownloader.utils.IngestionDatabase;
 import jakarta.inject.Inject;
 
 public class Main implements Runnable {
@@ -47,18 +48,20 @@ public class Main implements Runnable {
     private final IoUtils io;
     private final MavenResolverData data;
     private final DepGraphArgs args;
+    private final IngestionDatabase db;
 
     private Set<Pom> poms = new HashSet<>();
     private long lastStoredAt = 0;
     private int numPomsAddedSinceLastStore = 0;
 
     @Inject
-    public Main(HttpServer server, Kafka kafka, IoUtils io, MavenResolverData data, DepGraphArgs args) {
+    public Main(HttpServer server, Kafka kafka, IoUtils io, MavenResolverData data, DepGraphArgs args, IngestionDatabase db) {
         this.server = server;
         this.kafka = kafka;
         this.io = io;
         this.data = data;
         this.args = args;
+        this.db = db;
     }
 
     @Override
@@ -70,10 +73,12 @@ public class Main implements Runnable {
 
         initPomsAndDataContainers();
 
-        kafka.subscribe(DefaultTopics.POM_ANALYZER, new TRef<Message<Void, Pom>>() {}, (m, l) -> {
+        kafka.subscribe(DefaultTopics.POM_ANALYZER, Artifact.class, (a, l) -> {
             numPomsAddedSinceLastStore++;
-            logProgress(m.payload);
-            var pom = MavenUtilities.simplify(m.payload);
+            var s = db.getCurrentResult(a);
+
+            logProgress(s.pom);
+            var pom = MavenUtilities.simplify(s.pom);
             poms.add(pom);
 
             data.add(pom);
