@@ -15,17 +15,10 @@
  */
 package eu.f4sten.pomanalyzer;
 
-import org.jooq.SQLDialect;
-import org.jooq.impl.DSL;
-
 import com.google.inject.Provides;
 
 import dev.c0ps.diapper.InjectorConfig;
 import dev.c0ps.diapper.InjectorConfigBase;
-import dev.c0ps.io.JsonUtils;
-import eu.f4sten.infra.utils.PostgresConnector;
-import eu.f4sten.infra.utils.Version;
-import eu.f4sten.pomanalyzer.utils.DatabaseUtils;
 
 @InjectorConfig
 public class PomAnalyzerInjectorConfig extends InjectorConfigBase {
@@ -39,12 +32,5 @@ public class PomAnalyzerInjectorConfig extends InjectorConfigBase {
     @Provides
     public PomAnalyzerArgs providePomAnalyzerArgs() {
         return args;
-    }
-
-    @Provides
-    public DatabaseUtils bindDatabaseUtils(PostgresConnector pc, JsonUtils json, Version version) {
-        var c = pc.getNewConnection();
-        var dslContext = DSL.using(c, SQLDialect.POSTGRES);
-        return new DatabaseUtils(dslContext, json, version);
     }
 }

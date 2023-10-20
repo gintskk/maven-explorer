@@ -21,12 +21,6 @@ import com.beust.jcommander.Parameter;
 
 public class InfraArgs {
 
-    @Parameter(names = "--db.url", arity = 1, description = "JDBC url for the database")
-    public String dbUrl;
-
-    @Parameter(names = "--db.user", arity = 1, description = "user for the database connection")
-    public String dbUser;
-
     @Parameter(names = "--baseDir", arity = 1, description = "Base folder for all file-based operations")
     public File baseDir;
 

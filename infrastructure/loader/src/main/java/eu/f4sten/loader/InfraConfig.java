@@ -50,12 +50,10 @@ import dev.c0ps.maveneasyindex.ArtifactModule;
 import eu.f4sten.infra.kafka.LaneManagement;
 import eu.f4sten.infra.kafka.MessageGenerator;
 import eu.f4sten.infra.utils.HostName;
-import eu.f4sten.infra.utils.PostgresConnector;
 import eu.f4sten.infra.utils.Version;
 import eu.f4sten.loader.impl.kafka.FileBasedLaneManagement;
 import eu.f4sten.loader.impl.kafka.MessageGeneratorImpl;
 import eu.f4sten.loader.impl.utils.HostNameImpl;
-import eu.f4sten.loader.impl.utils.PostgresConnectorImpl;
 import eu.f4sten.loader.impl.utils.VersionImpl;
 import jakarta.inject.Named;
 
@@ -91,17 +89,6 @@ public class InfraConfig implements IInjectorConfig {
                 .notNull(args -> args.baseDir, "base dir") //
                 .that(args -> args.baseDir.exists(), "base dir does not exist");
         return new IoUtilsImpl(args.baseDir, jsonUtils, om);
-    }
-
-    @Provides
-    public PostgresConnector bindPostgresConnector() {
-        assertFor(args) //
-                .notNull(a -> a.dbUrl, "db url") //
-                .notNull(a -> a.dbUser, "db user") //
-                .that(a -> !a.dbUrl.contains("@"), "providing user via db url is not supported") //
-                .that(a -> a.dbUrl.startsWith("jdbc:postgresql://"), "db url does not start with 'jdbc:postgresql://'");
-
-        return new PostgresConnectorImpl(args.dbUrl, args.dbUser, true);
     }
 
     @Provides
