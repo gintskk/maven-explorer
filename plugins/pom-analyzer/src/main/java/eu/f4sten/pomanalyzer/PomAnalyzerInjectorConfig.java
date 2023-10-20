@@ -15,6 +15,8 @@
  */
 package eu.f4sten.pomanalyzer;
 
+import static dev.c0ps.diapper.AssertArgs.assertFor;
+
 import com.google.inject.Provides;
 
 import dev.c0ps.diapper.InjectorConfig;
@@ -31,6 +33,9 @@ public class PomAnalyzerInjectorConfig extends InjectorConfigBase {
 
     @Provides
     public PomAnalyzerArgs providePomAnalyzerArgs() {
+        assertFor(args)//
+                .notNull(a -> a.kafkaIn, "kafka input topic") //
+                .notNull(a -> a.kafkaOut, "kafka output topic");
         return args;
     }
 }

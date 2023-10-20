@@ -17,16 +17,21 @@ package eu.f4sten.mavendownloader;
 
 import java.io.File;
 
-import com.beust.jcommander.Parameter;
+import com.google.inject.Provides;
 
-public class MavenDownloaderArgs {
+import dev.c0ps.diapper.InjectorConfig;
+import dev.c0ps.diapper.InjectorConfigBase;
+import dev.c0ps.io.IoUtils;
+import eu.f4sten.infra.utils.Version;
+import eu.f4sten.mavendownloader.utils.FileBasedIngestionDatabase;
+import eu.f4sten.mavendownloader.utils.IngestionDatabase;
+import jakarta.inject.Named;
 
-    @Parameter(names = "--md.dir.ingestiondb", arity = 1, description = "Folder for all marker files of the ingestion database")
-    public File dirIngestionDb;
+@InjectorConfig
+public class Config extends InjectorConfigBase {
 
-    @Parameter(names = "--md.dir.work", arity = 1)
-    public File workingDir = new File("/root/");
-
-    @Parameter(names = "--md.dir.mavenHome", arity = 1)
-    public File mavenHome = new File("/opt/local/share/java/maven3/");
+    @Provides
+    public IngestionDatabase provideIngestionDatabase(Version v, IoUtils io, @Named("dir.ingestiondb") File dirIngestionDb) {
+        return new FileBasedIngestionDatabase(v, io, dirIngestionDb);
+    }
 }

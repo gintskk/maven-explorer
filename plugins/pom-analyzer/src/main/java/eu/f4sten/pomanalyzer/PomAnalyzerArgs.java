@@ -22,7 +22,7 @@ import eu.f4sten.infra.kafka.DefaultTopics;
 public class PomAnalyzerArgs {
 
     @Parameter(names = "--pomanalyzer.kafkaIn", arity = 1)
-    public String kafkaIn = DefaultTopics.INGEST;
+    public String kafkaIn = DefaultTopics.DOWNLOADS;
 
     @Parameter(names = "--pomanalyzer.kafkaOut", arity = 1)
     public String kafkaOut = DefaultTopics.POM_ANALYZER;

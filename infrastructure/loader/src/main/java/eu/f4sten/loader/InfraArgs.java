@@ -23,14 +23,7 @@ import com.beust.jcommander.Parameter;
 
 public class InfraArgs {
 
-    @Parameter(names = "--baseDir", arity = 1, description = "Base folder for all file-based operations")
-    public File baseDir;
-
-    @Parameter(names = "--dir.lanes", arity = 1, description = "Folder for all marker files of lane-management")
-    public File dirLanes;
-
-    @Parameter(names = "--dir.m2", arity = 1, description = "Folder for the local .m2 folder (usually '«home»/.m2/')")
-    public File dirM2 = new File(SystemUtils.getUserHome(), ".m2");
+    // kafka
 
     @Parameter(names = "--kafka.url", arity = 1, description = "address for the Kafka Server")
     public String kafkaUrl;
@@ -44,15 +37,36 @@ public class InfraArgs {
     @Parameter(names = "--instanceId", arity = 1, description = "uniquely identifies this application instance across re-starts")
     public String instanceId = null;
 
+    // libhttpd
+
     @Parameter(names = "--http.port", arity = 1, description = "port used for http server")
     public int httpPort = 8080;
 
     @Parameter(names = "--http.baseUrl", arity = 1, description = "base url of http servlets")
     public String httpBaseUrl = "/";
 
+    // timed executor
+
     @Parameter(names = "--exec.timeoutMS", arity = 1, description = "timeout for a timed execution")
     public int execTimeoutMS = 1000 * 60 * 5; // 5min
 
     @Parameter(names = "--exec.delayMS", arity = 1, description = "execution delay in a timed execution")
     public int execDelayMS = 0;
+
+    // directories
+
+    @Parameter(names = "--dir.base", arity = 1, description = "Working dir, base directory for all file-based operations")
+    public File dirBase;
+
+    @Parameter(names = "--dir.m2", arity = 1, description = "Folder for the local .m2 folder (usually '«home»/.m2/')")
+    public File dirM2 = new File(SystemUtils.getUserHome(), ".m2");
+
+    @Parameter(names = "--dir.lanes", arity = 1, description = "Folder for all marker files of lane-management")
+    public File dirLanes;
+
+    @Parameter(names = "--dir.ingestiondb", arity = 1, description = "Folder for all marker files of the ingestion database")
+    public File dirIngestionDb;
+
+    @Parameter(names = "--dir.mavenHome", arity = 1)
+    public File dirMavenHome = new File("/usr/share/maven/");
 }

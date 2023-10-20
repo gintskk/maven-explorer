@@ -85,9 +85,9 @@ public class InfraConfig implements IInjectorConfig {
     @Provides
     public IoUtils bindIoUtils(JsonUtils jsonUtils, ObjectMapper om) {
         assertFor(args) //
-                .notNull(args -> args.baseDir, "base dir") //
-                .that(args -> args.baseDir.exists(), "base dir does not exist");
-        return new IoUtilsImpl(args.baseDir, jsonUtils, om);
+                .notNull(args -> args.dirBase, "base dir") //
+                .that(args -> args.dirBase.exists(), "base dir does not exist");
+        return new IoUtilsImpl(args.dirBase, jsonUtils, om);
     }
 
     @Provides
@@ -155,6 +155,12 @@ public class InfraConfig implements IInjectorConfig {
     }
 
     @Provides
+    public LaneManagement provideLaneManagement() {
+        AssertArgs.directoryExists(args, a -> a.dirLanes, "lane folder");
+        return new FileBasedLaneManagement(args.dirLanes);
+    }
+
+    @Provides
     @Named("dir.m2")
     public File bindDirM2() {
         AssertArgs.directoryExists(args, a -> a.dirM2, ".m2 folder");
@@ -162,10 +168,23 @@ public class InfraConfig implements IInjectorConfig {
     }
 
     @Provides
-    public LaneManagement provideLaneManegement() {
-        assertFor(args) //
-                .notNull(args -> args.dirLanes, "lane dir") //
-                .that(args -> args.dirLanes.exists(), "lane dir does not exist");
-        return new FileBasedLaneManagement(args.dirLanes);
+    @Named("dir.mavenHome")
+    public File provideDirMavenHome() {
+        AssertArgs.directoryExists(args, a -> a.dirMavenHome, "mavenHome folder");
+        return args.dirMavenHome;
+    }
+
+    @Provides
+    @Named("dir.lanes")
+    public File provideDirLanes() {
+        AssertArgs.directoryExists(args, a -> a.dirLanes, "lane folder");
+        return args.dirLanes;
+    }
+
+    @Provides
+    @Named("dir.ingestiondb")
+    public File provideDirIngestionDb() {
+        AssertArgs.directoryExists(args, a -> a.dirIngestionDb, "ingestion db folder");
+        return args.dirIngestionDb;
     }
 }
