@@ -44,7 +44,7 @@ import eu.f4sten.pomanalyzer.data.ResolutionResult;
 import eu.f4sten.pomanalyzer.exceptions.NoArtifactRepositoryException;
 import eu.f4sten.pomanalyzer.exceptions.UnresolvablePomFileException;
 
-public class Resolver {
+public class ShrinkwrapResolver {
 
     // Attention: Be aware that the test suite for this class is disabled by default
     // to avoid unnecessary downloads on every build. Make sure to re-enable the
@@ -61,7 +61,7 @@ public class Resolver {
     // old http://bits.netbeans.org/maven2/ is deprecated, see https://netbeans.apache.org/about/oracle-transition.html
     private static final MavenRemoteRepository REPO_NETBEANS = getRepo("netbeans", "https://netbeans.apidesign.org/maven2/");
 
-    private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ShrinkwrapResolver.class);
 
     public Set<ResolutionResult> resolveDependenciesFromPom(File pom, String artifactRepository) {
         var coordToResult = new HashMap<String, ResolutionResult>();
@@ -200,6 +200,6 @@ public class Resolver {
             return "central";
         }
         var simplifiedUrl = url.replaceAll("[^a-zA-Z0-9-]+", "");
-        return format("%s-%s", Resolver.class.getName(), simplifiedUrl);
+        return format("%s-%s", ShrinkwrapResolver.class.getName(), simplifiedUrl);
     }
 }

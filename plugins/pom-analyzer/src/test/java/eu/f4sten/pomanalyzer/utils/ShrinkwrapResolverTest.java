@@ -42,7 +42,7 @@ import eu.f4sten.pomanalyzer.data.ResolutionResult;
 // local .m2 folder. This exact functionality is tested here, so the test suite will download
 // dependencies over-and-over again on every build. Enable this test only for local tests.
 @Disabled
-public class ResolverTest {
+public class ShrinkwrapResolverTest {
 
     private static final String MAVEN_CENTRAL = "https://repo.maven.apache.org/maven2/";
 
@@ -51,11 +51,11 @@ public class ResolverTest {
         fail("Suite is expensive and should only be run locally. Re-enable @Disabled annotation.");
     }
 
-    private Resolver sut;
+    private ShrinkwrapResolver sut;
 
     @BeforeEach
     public void setup() {
-        sut = new Resolver();
+        sut = new ShrinkwrapResolver();
         TestLoggerUtils.clearLog();
     }
 
@@ -92,7 +92,7 @@ public class ResolverTest {
         FileUtils.deleteQuietly(r.localPomFile);
         FileUtils.deleteQuietly(r.getLocalPackageFile());
         sut.resolveIfNotExisting(r);
-        TestLoggerUtils.assertLogsContain(Resolver.class, "INFO Resolving/downloading POM file that does not exist in .m2 folder ...");
+        TestLoggerUtils.assertLogsContain(ShrinkwrapResolver.class, "INFO Resolving/downloading POM file that does not exist in .m2 folder ...");
     }
 
     @Test
@@ -101,7 +101,7 @@ public class ResolverTest {
         sut.resolveIfNotExisting(r);
         TestLoggerUtils.clearLog();
         sut.resolveIfNotExisting(r);
-        TestLoggerUtils.assertLogsContain(Resolver.class, "INFO Found artifact in .m2 folder: io.vertx:vertx-core:jar:4.2.4 (%s)", MAVEN_CENTRAL);
+        TestLoggerUtils.assertLogsContain(ShrinkwrapResolver.class, "INFO Found artifact in .m2 folder: io.vertx:vertx-core:jar:4.2.4 (%s)", MAVEN_CENTRAL);
     }
 
     @Test
@@ -193,7 +193,7 @@ public class ResolverTest {
             "https://gitlab.com/api/v4/projects/26117144/packages/maven/");
 
     private Set<ResolutionResult> resolveTestPom(String pathToPom) {
-        var fullPath = Path.of(ResolverTest.class.getSimpleName(), pathToPom);
+        var fullPath = Path.of(ShrinkwrapResolverTest.class.getSimpleName(), pathToPom);
         File pom = ResourceUtils.getTestResource(fullPath.toString());
         return sut.resolveDependenciesFromPom(pom, MAVEN_CENTRAL_REPO);
     }

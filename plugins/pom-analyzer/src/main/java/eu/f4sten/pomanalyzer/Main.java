@@ -40,7 +40,7 @@ import eu.f4sten.pomanalyzer.utils.DatabaseUtils;
 import eu.f4sten.pomanalyzer.utils.EffectiveModelBuilder;
 import eu.f4sten.pomanalyzer.utils.PackagingFixer;
 import eu.f4sten.pomanalyzer.utils.ProgressTracker;
-import eu.f4sten.pomanalyzer.utils.Resolver;
+import eu.f4sten.pomanalyzer.utils.ShrinkwrapResolver;
 import jakarta.inject.Inject;
 
 public class Main implements Runnable {
@@ -52,7 +52,7 @@ public class Main implements Runnable {
     private final EffectiveModelBuilder modelBuilder;
     private final PomExtractor extractor;
     private final DatabaseUtils db;
-    private final Resolver resolver;
+    private final ShrinkwrapResolver resolver;
     private final Kafka kafka;
     private final PomAnalyzerArgs args;
     private final PackagingFixer fixer;
@@ -61,7 +61,7 @@ public class Main implements Runnable {
     private final Date startedAt = new Date();
 
     @Inject
-    public Main(ProgressTracker tracker, MavenRepositoryUtils repo, EffectiveModelBuilder modelBuilder, PomExtractor extractor, DatabaseUtils db, Resolver resolver, Kafka kafka, PomAnalyzerArgs args,
+    public Main(ProgressTracker tracker, MavenRepositoryUtils repo, EffectiveModelBuilder modelBuilder, PomExtractor extractor, DatabaseUtils db, ShrinkwrapResolver resolver, Kafka kafka, PomAnalyzerArgs args,
             PackagingFixer fixer, TimedExecutor timedExec) {
         this.tracker = tracker;
         this.repo = repo;

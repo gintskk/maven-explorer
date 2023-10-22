@@ -117,7 +117,7 @@ public class EffectiveModelBuilderTest {
         var pathToPom = EffectiveModelBuilderTest.class.getSimpleName() + "/" + relPathToPom;
         var pom = ResourceUtils.getTestResource(pathToPom);
         // resolve once to make sure all dependencies exist in local repo
-        new Resolver().resolveDependenciesFromPom(pom, MavenUtilities.MAVEN_CENTRAL_REPO);
+        new ShrinkwrapResolver().resolveDependenciesFromPom(pom, MavenUtilities.MAVEN_CENTRAL_REPO);
         var sut = new EffectiveModelBuilder();
         return sut.buildEffectiveModel(pom);
     }

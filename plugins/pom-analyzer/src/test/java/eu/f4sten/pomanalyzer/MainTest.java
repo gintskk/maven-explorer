@@ -28,7 +28,7 @@ import eu.f4sten.pomanalyzer.utils.DatabaseUtils;
 import eu.f4sten.pomanalyzer.utils.EffectiveModelBuilder;
 import eu.f4sten.pomanalyzer.utils.PackagingFixer;
 import eu.f4sten.pomanalyzer.utils.ProgressTracker;
-import eu.f4sten.pomanalyzer.utils.Resolver;
+import eu.f4sten.pomanalyzer.utils.ShrinkwrapResolver;
 
 public class MainTest {
 
@@ -36,7 +36,7 @@ public class MainTest {
     private EffectiveModelBuilder modelBuilder;
     private PomExtractor extractor;
     private DatabaseUtils db;
-    private Resolver resolver;
+    private ShrinkwrapResolver resolver;
     private Kafka kafka;
     private PomAnalyzerArgs args;
     private PackagingFixer fixer;
@@ -52,7 +52,7 @@ public class MainTest {
         modelBuilder = mock(EffectiveModelBuilder.class);
         extractor = mock(PomExtractor.class);
         db = mock(DatabaseUtils.class);
-        resolver = mock(Resolver.class);
+        resolver = mock(ShrinkwrapResolver.class);
         kafka = mock(Kafka.class);
         args = new PomAnalyzerArgs();
         fixer = mock(PackagingFixer.class);
