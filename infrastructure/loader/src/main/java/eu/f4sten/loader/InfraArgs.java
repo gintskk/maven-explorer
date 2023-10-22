@@ -77,6 +77,9 @@ public class InfraArgs {
     @Parameter(names = "--dir.lanes", arity = 1, description = "Folder for all marker files of lane-management")
     public File dirLanes;
 
+    @Parameter(names = "--dir.completion", arity = 1, description = "Folder for all marker files of the completion progress")
+    public File dirCompletion;
+
     @Parameter(names = "--dir.ingestiondb", arity = 1, description = "Folder for all marker files of the ingestion database")
     public File dirIngestionDb;
 

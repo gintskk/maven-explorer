@@ -190,6 +190,13 @@ public class InfraConfig implements IInjectorConfig {
     }
 
     @Provides
+    @Named("dir.completion")
+    public File bindDirCompletion() {
+        AssertArgs.directoryExists(args, a -> a.dirCompletion, "completion folder");
+        return args.dirCompletion;
+    }
+
+    @Provides
     @Named("dir.m2")
     public File bindDirM2() {
         AssertArgs.directoryExists(args, a -> a.dirM2, ".m2 folder");
