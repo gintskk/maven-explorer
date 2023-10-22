@@ -21,6 +21,8 @@ import org.apache.commons.lang3.SystemUtils;
 
 import com.beust.jcommander.Parameter;
 
+import eu.f4sten.infra.kafka.DefaultTopics;
+
 public class InfraArgs {
 
     // kafka
@@ -36,6 +38,17 @@ public class InfraArgs {
 
     @Parameter(names = "--instanceId", arity = 1, description = "uniquely identifies this application instance across re-starts")
     public String instanceId = null;
+
+    // kafka.topics
+
+    @Parameter(names = "--kafka.topic.requested", arity = 1)
+    public String kafkaTopicRequested = DefaultTopics.REQUESTED;
+
+    @Parameter(names = "--kafka.topic.downloaded", arity = 1)
+    public String kafkaTopicDownloaded = DefaultTopics.DOWNLOADED;
+
+    @Parameter(names = "--kafka.topic.analyzed", arity = 1)
+    public String kafkaTopicAnalyzed = DefaultTopics.ANALYZED;
 
     // libhttpd
 

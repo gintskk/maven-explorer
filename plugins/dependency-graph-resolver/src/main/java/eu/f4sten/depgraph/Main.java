@@ -73,7 +73,7 @@ public class Main implements Runnable {
 
         initPomsAndDataContainers();
 
-        kafka.subscribe(DefaultTopics.POM_ANALYZER, Artifact.class, (a, l) -> {
+        kafka.subscribe(DefaultTopics.ANALYZED, Artifact.class, (a, l) -> {
             numPomsAddedSinceLastStore++;
             var s = db.getCurrentResult(a);
 

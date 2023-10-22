@@ -23,8 +23,8 @@ public class DefaultTopicsTest {
 
     @Test
     public void defaultValues() {
-        assertEquals("fasten.mvn.releases", DefaultTopics.INGEST);
-        assertEquals("fasten.mvn.downloads", DefaultTopics.DOWNLOADS);
-        assertEquals("fasten.POMAnalyzer", DefaultTopics.POM_ANALYZER);
+        assertEquals("maven-explorer.requested", DefaultTopics.REQUESTED);
+        assertEquals("maven-explorer.downloaded", DefaultTopics.DOWNLOADED);
+        assertEquals("maven-explorer.analyzed", DefaultTopics.ANALYZED);
     }
 }

@@ -16,6 +16,7 @@
 package eu.f4sten.loader;
 
 import static dev.c0ps.diapper.AssertArgs.assertFor;
+import static dev.c0ps.diapper.AssertArgs.notNullAndNotEmpty;
 
 import java.io.File;
 import java.util.Set;
@@ -155,9 +156,37 @@ public class InfraConfig implements IInjectorConfig {
     }
 
     @Provides
+    @Named("kafka.topic.requested")
+    public String provideKafkaTopicRequested() {
+        notNullAndNotEmpty(args, a -> a.kafkaTopicRequested, "kafka.topic.requested");
+        return args.kafkaTopicRequested;
+    }
+
+    @Provides
+    @Named("kafka.topic.downloaded")
+    public String provideKafkaTopicDownloaded() {
+        notNullAndNotEmpty(args, a -> a.kafkaTopicDownloaded, "kafka.topic.downloaded");
+        return args.kafkaTopicDownloaded;
+    }
+
+    @Provides
+    @Named("kafka.topic.analyzed")
+    public String provideKafkaTopicAnalyzed() {
+        notNullAndNotEmpty(args, a -> a.kafkaTopicAnalyzed, "kafka.topic.analyzed");
+        return args.kafkaTopicAnalyzed;
+    }
+
+    @Provides
     public LaneManagement provideLaneManagement() {
         AssertArgs.directoryExists(args, a -> a.dirLanes, "lane folder");
         return new FileBasedLaneManagement(args.dirLanes);
+    }
+
+    @Provides
+    @Named("dir.base")
+    public File bindDirBase() {
+        AssertArgs.directoryExists(args, a -> a.dirBase, "base folder (aka. working dir)");
+        return args.dirBase;
     }
 
     @Provides

@@ -27,14 +27,12 @@ import org.junit.jupiter.api.Test;
 
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.maveneasyindex.Artifact;
-import eu.f4sten.mavencrawler.MavenCrawlerArgs;
 
 public class IndexProcessorTest {
 
     private static final Artifact SOME_MAVEN_ID = mock(Artifact.class);
     private static final String SOME_TOPIC = "abcd";
 
-    private MavenCrawlerArgs args;
     private LocalStore store;
     private EasyIndexClient utils;
     private Kafka kafka;
@@ -43,12 +41,10 @@ public class IndexProcessorTest {
 
     @BeforeEach
     public void setup() {
-        args = new MavenCrawlerArgs();
-        args.kafkaOut = SOME_TOPIC;
         store = mock(LocalStore.class);
         utils = mock(EasyIndexClient.class);
         kafka = mock(Kafka.class);
-        sut = new IndexProcessor(args, store, utils, kafka);
+        sut = new IndexProcessor(store, utils, kafka, SOME_TOPIC);
     }
 
     @Test

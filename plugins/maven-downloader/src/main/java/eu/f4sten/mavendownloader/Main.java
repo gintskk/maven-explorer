@@ -63,7 +63,7 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        kafka.subscribe(DefaultTopics.INGEST, Artifact.class, this::download);
+        kafka.subscribe(DefaultTopics.REQUESTED, Artifact.class, this::download);
         while (true) {
             LOG.debug("Polling ...");
             kafka.poll();
@@ -177,7 +177,7 @@ public class Main implements Runnable {
 
     private void publish(Artifact a, Lane lane) {
         LOG.info("Publishing result for artifact {} ... ({})", a, lane);
-        kafka.publish(a, DefaultTopics.DOWNLOADS, lane);
+        kafka.publish(a, DefaultTopics.DOWNLOADED, lane);
     }
 
     private void publishError(IngestionData s) {
@@ -192,6 +192,6 @@ public class Main implements Runnable {
             break;
         }
         var msg = new SimpleErrorMessage<Artifact>(s.artifact, s.stacktrace);
-        kafka.publish(msg, DefaultTopics.DOWNLOADS, Lane.ERROR);
+        kafka.publish(msg, DefaultTopics.DOWNLOADED, Lane.ERROR);
     }
 }

@@ -21,10 +21,7 @@ public class DefaultTopics {
         // do not instantiate
     }
 
-    public static final String INGEST = "fasten.mvn.releases";
-    public static final String DOWNLOADS = "fasten.mvn.downloads";
-    public static final String POM_ANALYZER = "fasten.POMAnalyzer";
-    public static final String CALLABLE_INDEXER = "fasten.CallableIndexFastenPlugin";
-    public static final String SOURCES_PROVIDER = "fasten.SourcesProvider";
-    public static final String METADATA_DB_JAVA = "fasten.MetadataDBJavaExtension";
+    public static final String REQUESTED = "maven-explorer.requested";
+    public static final String DOWNLOADED = "maven-explorer.downloaded";
+    public static final String ANALYZED = "maven-explorer.analyzed";
 }

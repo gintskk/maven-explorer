@@ -20,28 +20,26 @@ import static dev.c0ps.franz.Lane.NORMAL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dev.c0ps.diapper.AssertArgs;
 import dev.c0ps.franz.Kafka;
-import eu.f4sten.mavencrawler.MavenCrawlerArgs;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 public class IndexProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(IndexProcessor.class);
 
-    private final MavenCrawlerArgs args;
     private final LocalStore store;
     private final EasyIndexClient utils;
     private final Kafka kafka;
+    private final String kafkaTopicOut;
 
     @Inject
-    public IndexProcessor(MavenCrawlerArgs args, LocalStore store, EasyIndexClient utils, Kafka kafka) {
-        AssertArgs.assertFor(args) //
-                .notNull(a -> a.kafkaOut, "kafka output");
-        this.args = args;
+    public IndexProcessor(LocalStore store, EasyIndexClient utils, Kafka kafka, //
+            @Named("kafka.topic.requested") String kafkaTopicOut) {
         this.store = store;
         this.utils = utils;
         this.kafka = kafka;
+        this.kafkaTopicOut = kafkaTopicOut;
     }
 
     public void tryProcessingNextIndices() {
@@ -60,7 +58,7 @@ public class IndexProcessor {
         LOG.info("Publishing {} coordinates ...", artifacts.size());
         for (var ma : artifacts) {
             LOG.debug("Publishing: {}:{}:{}", ma.groupId, ma.artifactId, ma.version);
-            kafka.publish(ma, args.kafkaOut, NORMAL);
+            kafka.publish(ma, kafkaTopicOut, NORMAL);
         }
     }
 }
