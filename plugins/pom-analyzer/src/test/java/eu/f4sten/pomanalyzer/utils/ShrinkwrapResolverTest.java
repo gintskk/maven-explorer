@@ -62,6 +62,8 @@ public class ShrinkwrapResolverTest {
         TestLoggerUtils.clearLog();
     }
 
+    // TODO add test for org.javassist:javassist:3.24.0-GA:jar:0@CENTRAL which fails for SYSTEM scope
+
     @Test
     public void failNoLocalPom() {
         var a = new Artifact("g", "a", "v");
