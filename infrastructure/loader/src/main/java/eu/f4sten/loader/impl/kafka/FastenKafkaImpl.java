@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.f4sten.infra.impl.kafka;
+package eu.f4sten.loader.impl.kafka;
 
 import dev.c0ps.franz.KafkaConnector;
 import dev.c0ps.franz.KafkaImpl;

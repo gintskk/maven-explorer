@@ -10,11 +10,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>eu.fasten-project</groupId>
-            <artifactId>pom-analyzer</artifactId>
-            <version>0.0.19-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>dev.c0ps</groupId>
             <artifactId>commons-maven</artifactId>
             <version>0.0.1</version>

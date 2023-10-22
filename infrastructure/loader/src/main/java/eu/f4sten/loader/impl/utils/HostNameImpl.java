@@ -13,25 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.f4sten.infra.impl.kafka;
+package eu.f4sten.loader.impl.utils;
 
-public class KafkaConnectionError extends RuntimeException {
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
-    private static final long serialVersionUID = -5060764034291589459L;
+import eu.f4sten.infra.utils.HostName;
 
-    public KafkaConnectionError() {
-        super();
-    }
+public class HostNameImpl implements HostName {
 
-    public KafkaConnectionError(String msg) {
-        super(msg);
-    }
-
-    public KafkaConnectionError(Throwable t) {
-        super(t);
-    }
-
-    public KafkaConnectionError(String msg, Throwable t) {
-        super(msg, t);
+    @Override
+    public String get() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

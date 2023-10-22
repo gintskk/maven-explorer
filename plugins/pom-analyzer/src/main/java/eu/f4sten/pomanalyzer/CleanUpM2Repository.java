@@ -60,9 +60,9 @@ public class CleanUpM2Repository implements Runnable {
 
                         var tag = findFirstNonCommentNonXmlTag(content);
                         if (tag.startsWith("project.") || !tag.startsWith("project")) {
-                            System.out.println("%%% Weird POM syntax... please review: %%%%%%%%%");
-                            System.out.println(path);
-                            System.out.println(tag);
+                            LOG.info("%%% Weird POM syntax... please review: %%%%%%%%%");
+                            LOG.info(path.toString());
+                            LOG.info(tag);
                         }
                     }
 

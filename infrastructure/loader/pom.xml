@@ -28,17 +28,56 @@
             <version>2.0.9</version>
         </dependency>
 
-        <!-- CLI runtime -->
+        <!-- other -->
         <dependency>
             <groupId>dev.c0ps.diapper</groupId>
             <artifactId>runner</artifactId>
             <version>0.0.3</version>
         </dependency>
+        <dependency>
+            <groupId>dev.c0ps.libhttpd</groupId>
+            <artifactId>impl</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.diapper</groupId>
+            <artifactId>api</artifactId>
+            <version>0.0.3</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps</groupId>
+            <artifactId>commons-maven</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.io</groupId>
+            <artifactId>impl</artifactId>
+            <version>0.0.2</version>
+        </dependency>
 
-        <!-- FASTEN plugins -->
+        <!-- kafka -->
+
+        <dependency>
+            <groupId>dev.c0ps.franz</groupId>
+            <artifactId>api</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.franz</groupId>
+            <artifactId>impl</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+
+        <!-- plugins -->
+
         <dependency>
             <groupId>eu.fasten-project</groupId>
-            <artifactId>infrastructure-impl</artifactId>
+            <artifactId>infrastructure</artifactId>
             <version>0.0.19-SNAPSHOT</version>
         </dependency>
         <dependency>
@@ -65,49 +104,41 @@
 
     <build>
         <plugins>
-
             <plugin>
-                <!-- used to collect all dependencies in "lib" folder -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.6.0</version>
                 <executions>
                     <execution>
-                        <id>collect-deps-in-lib</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
+                        <id>search-for-unused-or-undeclared-deps</id>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/lib/</outputDirectory>
-                            <useRepositoryLayout>true</useRepositoryLayout>
-                            <includeScope>runtime</includeScope>
-                            <!-- needed to circumvent https://issues.apache.org/jira/browse/MJAR-156 -->
-                            <useBaseVersion>true</useBaseVersion>
+                            <ignoredUnusedDeclaredDependencies combine.children="append">
+                                <!-- testing backend -->
+                                <ignoredUnusedDeclaredDependency>com.github.valfirst:slf4j-test</ignoredUnusedDeclaredDependency>
+                                <!-- plugins -->
+                                <ignoredUnusedDeclaredDependency>eu.fasten-project:examples</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>eu.fasten-project:maven-crawler</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>eu.fasten-project:pom-analyzer</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>eu.fasten-project:dependency-graph-resolver</ignoredUnusedDeclaredDependency>
+                            </ignoredUnusedDeclaredDependencies>
+                            <ignoredDependencies combine.children="append">
+                                <ignoredDependency>org.apache.kafka:kafka-clients</ignoredDependency>
+                            </ignoredDependencies>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
-                <!-- used to make resulting jar executable and refer to lib folder for dependencies -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.3.0</version>
                 <configuration>
                     <archive>
-                        <manifest>
+                        <manifest combine.children="append">
                             <mainClass>eu.f4sten.loader.Main</mainClass>
                             <addClasspath>true</addClasspath>
-                            <classpathPrefix>lib/</classpathPrefix>
-                            <classpathLayoutType>repository</classpathLayoutType>
-                            <!-- need to circumvent https://issues.apache.org/jira/browse/MJAR-156 -->
-                            <useUniqueVersions>true</useUniqueVersions>
                         </manifest>
                     </archive>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
 </project>

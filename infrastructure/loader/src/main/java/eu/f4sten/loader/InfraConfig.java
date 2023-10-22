@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.f4sten.infra.impl;
+package eu.f4sten.loader;
 
 import static dev.c0ps.diapper.AssertArgs.assertFor;
 
@@ -46,14 +46,14 @@ import dev.c0ps.libhttpd.HttpServer;
 import dev.c0ps.libhttpd.HttpServerGracefulShutdownThread;
 import dev.c0ps.libhttpd.HttpServerImpl;
 import dev.c0ps.maven.json.CommonsMavenDataModule;
-import eu.f4sten.infra.impl.kafka.MessageGeneratorImpl;
-import eu.f4sten.infra.impl.utils.HostNameImpl;
-import eu.f4sten.infra.impl.utils.PostgresConnectorImpl;
-import eu.f4sten.infra.impl.utils.VersionImpl;
 import eu.f4sten.infra.kafka.MessageGenerator;
 import eu.f4sten.infra.utils.HostName;
 import eu.f4sten.infra.utils.PostgresConnector;
 import eu.f4sten.infra.utils.Version;
+import eu.f4sten.loader.impl.kafka.MessageGeneratorImpl;
+import eu.f4sten.loader.impl.utils.HostNameImpl;
+import eu.f4sten.loader.impl.utils.PostgresConnectorImpl;
+import eu.f4sten.loader.impl.utils.VersionImpl;
 
 @InjectorConfig
 public class InfraConfig implements IInjectorConfig {

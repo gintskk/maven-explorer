@@ -17,19 +17,31 @@
 
     <dependencies>
         <dependency>
-            <groupId>jakarta.inject</groupId>
-            <artifactId>jakarta.inject-api</artifactId>
-            <version>2.0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>2.0.9</version>
-        </dependency>
-        <dependency>
             <groupId>eu.fasten-project</groupId>
             <artifactId>infrastructure</artifactId>
             <version>0.0.19-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.franz</groupId>
+            <artifactId>api</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.diapper</groupId>
+            <artifactId>api</artifactId>
+            <version>0.0.3</version>
+        </dependency>
+
+        <!-- required annotations for servlets (served through HttpServerImpl) -->
+        <dependency>
+            <groupId>dev.c0ps.libhttpd</groupId>
+            <artifactId>api</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <version>3.1.0</version>
         </dependency>
     </dependencies>
 </project>

@@ -33,7 +33,6 @@ jobs:
 
       - name: Parse and provide version info
         run: |
-          cd releng
           VERSION_RAW=`mvn help:evaluate -Dexpression=project.version -q -DforceStdout`
           VERSION=`echo $VERSION_RAW | cut -d"-" -f1` # get rid of -SNAPSHOT
           MAJOR=`echo "$VERSION" | cut -d . -f 1`
@@ -51,20 +50,18 @@ jobs:
 
       - name: Update all projects to release version
         run: |
-          cd releng
           mvn -B -ntp versions:set -DnewVersion=${{ env.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.FASTEN_TOKEN }}
 
-      - name: Update version.txt in infrastructure-impl to release version
+      - name: Update version.txt in loader to release version
         run: |
-          cd infrastructure/infrastructure-impl
+          cd infrastructure/loader
           echo "${{ env.version }}" > src/main/resources/version.txt
-          ../../releng/set_VersionImplTest_constant.sh ${{ env.version }}
+          ../../set_VersionImplTest_constant.sh ${{ env.version }}
 
       - name: Build and deploy Maven packages
         run: |
-          cd releng
           mvn -B -ntp clean deploy
         env:
           GITHUB_TOKEN: ${{ secrets.FASTEN_TOKEN }}
@@ -94,14 +91,13 @@ jobs:
 
       - name: Update all projects to next snapshot release
         run: |
-          cd releng
           mvn -B -ntp versions:set -DnewVersion=${{ env.version_next }}
         env:
           GITHUB_TOKEN: ${{ secrets.FASTEN_TOKEN }}
 
-      - name: Update version.txt in infrastructure-impl to next snapshot release
+      - name: Update version.txt in loader to next snapshot release
         run: |
-          cd infrastructure/infrastructure-impl
+          cd infrastructure/loader
           echo "${{ env.version_next }}" > src/main/resources/version.txt
           ../../releng/set_VersionImplTest_constant.sh ${{ env.version_next }}
 

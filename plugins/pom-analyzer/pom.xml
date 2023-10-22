@@ -9,6 +9,9 @@
     <artifactId>pom-analyzer</artifactId>
 
     <dependencies>
+
+        <!-- cops dependencies -->
+        
         <dependency>
             <groupId>dev.c0ps</groupId>
             <artifactId>commons-maven</artifactId>
@@ -20,13 +23,21 @@
             <version>0.0.1</version>
         </dependency>
         <dependency>
+            <groupId>dev.c0ps</groupId>
+            <artifactId>commons</artifactId>
+            <version>0.0.5</version>
+        </dependency>
+
+        <!-- maven -->
+
+        <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-model</artifactId>
             <version>3.9.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
-            <artifactId>maven-artifact</artifactId>
+            <artifactId>maven-settings</artifactId>
             <version>3.9.3</version>
         </dependency>
         <dependency>
@@ -35,15 +46,45 @@
             <version>3.9.3</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-api</artifactId>
+            <version>1.9.13</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-utils</artifactId>
+            <version>3.5.1</version>
+        </dependency>
+
+        <!-- shrinkwrap -->
+
+        <dependency>
             <groupId>org.jboss.shrinkwrap.resolver</groupId>
-            <artifactId>shrinkwrap-resolver-depchain</artifactId>
+            <artifactId>shrinkwrap-resolver-api</artifactId>
             <version>3.2.1</version>
-            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shrinkwrap.resolver</groupId>
+            <artifactId>shrinkwrap-resolver-api-maven</artifactId>
+            <version>3.2.1</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.shrinkwrap.resolver</groupId>
             <artifactId>shrinkwrap-resolver-impl-maven</artifactId>
             <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shrinkwrap.resolver</groupId>
+            <artifactId>shrinkwrap-resolver-spi</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+
+        <!-- other -->
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.13.0</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
@@ -57,6 +98,11 @@
         </dependency>
 
         <!-- metadata db -->
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>3.16.21</version>
+        </dependency>
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core-metadata</artifactId>
@@ -77,4 +123,19 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <configuration>
+                        <!-- please note that this overrides the parent, double check that nothing is missing -->
+                        <excludes>**/target/**,**/MavenResolvedArtifactImpl.java,**/RepositoryModelResolver.java</excludes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

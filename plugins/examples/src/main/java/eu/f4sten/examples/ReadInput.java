@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Date;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dev.c0ps.diapper.AssertArgs;
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.franz.Lane;
@@ -27,6 +30,8 @@ import eu.f4sten.examples.data.SomeInputData;
 import jakarta.inject.Inject;
 
 public class ReadInput implements Runnable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ReadInput.class);
 
     private final Kafka kafka;
     private final MyArgs args;
@@ -47,7 +52,7 @@ public class ReadInput implements Runnable {
 
             var input = readNextLine();
             if (input.isEmpty()) {
-                System.out.print("No input provided, aborting.");
+                LOG.info("No input provided, aborting.");
                 isRunning = false;
                 continue;
             }
@@ -57,7 +62,7 @@ public class ReadInput implements Runnable {
     }
 
     private String readNextLine() {
-        System.out.print("Please provide a name: ");
+        LOG.info("Please provide a name: ");
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         try {
             return br.readLine();

@@ -1,57 +1,71 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>eu.fasten-project</groupId>
-        <version>0.0.19-SNAPSHOT</version>
-        <artifactId>releng</artifactId>
-        <relativePath>releng</relativePath>
+        <groupId>dev.c0ps</groupId>
+        <artifactId>parent</artifactId>
+        <version>0.0.5</version>
     </parent>
+
+    <groupId>eu.fasten-project</groupId>
     <artifactId>root</artifactId>
+    <version>0.0.19-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
         <module>infrastructure/infrastructure</module>
-        <module>infrastructure/infrastructure-impl</module>
         <module>infrastructure/loader</module>
         <module>plugins</module>
     </modules>
 
+    <properties>
+        <!-- automatically set through: mvn versions:set -DupdateBuildOutputTimestampPolicy=always -DnewVersion=... -->
+        <project.build.outputTimestamp>2023-09-14T01:37:29Z</project.build.outputTimestamp>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>github-fasten-project-fasten</id>
+            <url>https://maven.pkg.github.com/fasten-project/fasten/</url>
+        </repository>
+        <repository>
+            <id>github-cops</id>
+            <url>https://maven.pkg.github.com/cops-lab/packages/</url>
+        </repository>
+    </repositories>
+
+    <!-- common dependencies -->
     <dependencies>
+        <!-- general app composition -->
+        <dependency>
+            <groupId>dev.c0ps.diapper</groupId>
+            <artifactId>api</artifactId>
+            <version>0.0.3</version>
+        </dependency>
+        <!-- logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>2.0.9</version>
         </dependency>
+        <!-- hashCode/equals -->
         <dependency>
-            <groupId>com.github.valfirst</groupId>
-            <artifactId>slf4j-test</artifactId>
-            <version>3.0.1</version>
-            <scope>test</scope>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.13.0</version>
         </dependency>
+        <!-- rest support for plugins -->
+        <dependency>
+            <groupId>dev.c0ps.libhttpd</groupId>
+            <artifactId>api</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+
+        <!-- test  -->
         <dependency>
             <groupId>dev.c0ps</groupId>
             <artifactId>test-utils</artifactId>
             <version>0.0.5</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>5.10.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.10.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>5.5.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -61,16 +75,55 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.stefanbirkner</groupId>
-            <artifactId>system-lambda</artifactId>
-            <version>1.2.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.github.artsok</groupId>
-            <artifactId>rerunner-jupiter</artifactId>
-            <version>2.1.6</version>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.13.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>search-for-unused-or-undeclared-deps</id>
+                        <configuration>
+                            <ignoredDependencies combine.children="append">
+                                <!-- logging API -->
+                                <ignoredDependency>org.slf4j:slf4j-api</ignoredDependency>
+                                <!-- app composition (API for args and injectors) -->
+                                <ignoredDependency>dev.c0ps.diapper:api</ignoredDependency>
+                                <ignoredDependency>jakarta.inject:jakarta.inject-api</ignoredDependency>
+                                <ignoredDependency>com.google.inject:guice</ignoredDependency>
+                                <ignoredDependency>com.beust:jcommander</ignoredDependency>
+                                <!-- rest support for plugins (API+annotations) -->
+                                <ignoredDependency>dev.c0ps.libhttpd:api</ignoredDependency>
+                                <ignoredDependency>jakarta.ws.rs:jakarta.ws.rs-api</ignoredDependency>
+                                <!-- json -->
+                                <ignoredDependency>com.fasterxml.jackson.core:jackson-core</ignoredDependency>
+                                <ignoredDependency>com.fasterxml.jackson.core:jackson-databind</ignoredDependency>
+                                <!-- io and convenience -->
+                                <ignoredDependency>dev.c0ps.io:api</ignoredDependency>
+                                <ignoredDependency>org.apache.commons:commons-lang3</ignoredDependency>
+
+                                <!-- testing -->
+                                <ignoredDependency>dev.c0ps:test-utils</ignoredDependency>
+                                <!-- asserts for system.out -->
+                                <ignoredDependency>com.github.stefanbirkner:system-lambda</ignoredDependency>
+                                <!-- prepare or assert files -->
+                                <ignoredDependency>commons-io:commons-io</ignoredDependency>
+                                <!-- asserts for json -->
+                                <ignoredDependency>org.skyscreamer:jsonassert</ignoredDependency>
+                                <!-- dep of jsonassert -->
+                                <ignoredDependency>com.vaadin.external.google:android-json</ignoredDependency>
+                            </ignoredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
