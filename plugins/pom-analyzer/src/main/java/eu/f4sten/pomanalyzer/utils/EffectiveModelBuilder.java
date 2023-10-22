@@ -23,13 +23,14 @@ import org.apache.maven.model.building.DefaultModelBuildingRequest;
 import org.apache.maven.model.building.ModelBuildingException;
 import org.apache.maven.model.building.ModelBuildingRequest;
 
+import eu.f4sten.pomanalyzer.exceptions.InvalidPomFileException;
 import fr.inria.spirals.repairnator.process.maven.RepositoryModelResolver;
 
 public class EffectiveModelBuilder {
 
     public static final File LOCAL_M2 = MavenSettingsUtils.getPathOfLocalRepository();
 
-    public Model buildEffectiveModel(File pom) {
+    public Model buildEffectiveModel(File pomFile) {
 
         try {
             var factory = new DefaultModelBuilderFactory();
@@ -40,13 +41,13 @@ public class EffectiveModelBuilder {
             req.setSystemProperties(System.getProperties());
             req.setModelResolver(new RepositoryModelResolver(LOCAL_M2));
             req.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL);
-            req.setPomFile(pom);
+            req.setPomFile(pomFile);
 
             var buildingResult = builder.build(req);
             var model = buildingResult.getEffectiveModel();
             return model;
         } catch (ModelBuildingException e) {
-            throw new RuntimeException(e);
+            throw new InvalidPomFileException(e);
         }
     }
 }

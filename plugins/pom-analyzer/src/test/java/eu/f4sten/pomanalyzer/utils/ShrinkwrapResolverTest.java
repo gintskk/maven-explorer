@@ -15,28 +15,29 @@
  */
 package eu.f4sten.pomanalyzer.utils;
 
-import static dev.c0ps.maven.MavenUtilities.MAVEN_CENTRAL_REPO;
-import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.lang.module.ResolutionException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
-import org.jboss.shrinkwrap.resolver.api.NoResolvedResultException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import dev.c0ps.commons.ResourceUtils;
+import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.test.TestLoggerUtils;
+import eu.f4sten.infra.utils.MavenRepositoryUtils;
 import eu.f4sten.pomanalyzer.data.ResolutionResult;
+import eu.f4sten.pomanalyzer.exceptions.MissingPomFileException;
 
 // The artifact source resolution breaks caching mechanisms by deleting packages from the
 // local .m2 folder. This exact functionality is tested here, so the test suite will download
@@ -44,95 +45,65 @@ import eu.f4sten.pomanalyzer.data.ResolutionResult;
 @Disabled
 public class ShrinkwrapResolverTest {
 
-    private static final String MAVEN_CENTRAL = "https://repo.maven.apache.org/maven2/";
+    private static final String CENTRAL = "https://repo.maven.apache.org/maven2/";
 
     @Test
     public void reminderToReenableDisabledAnnotationOnClass() {
         fail("Suite is expensive and should only be run locally. Re-enable @Disabled annotation.");
     }
 
+    private MavenRepositoryUtils mru;
     private ShrinkwrapResolver sut;
 
     @BeforeEach
     public void setup() {
-        sut = new ShrinkwrapResolver();
+        mru = mock(MavenRepositoryUtils.class);
+        sut = new ShrinkwrapResolver(mru);
         TestLoggerUtils.clearLog();
     }
 
     @Test
-    public void pomResolution() {
-        var jar = new ResolutionResult("io.vertx:vertx-core:jar:4.2.4", MAVEN_CENTRAL);
-
-        for (var packaging : new String[] { "?", "pom", "jar" }) {
-            var gapv = format("io.vertx:vertx-core:%s:4.2.4", packaging);
-            var r = new ResolutionResult(gapv, MAVEN_CENTRAL);
-
-            FileUtils.deleteQuietly(r.localPomFile);
-            FileUtils.deleteQuietly(r.getLocalPackageFile());
-            assertFalse(r.localPomFile.exists());
-            assertFalse(r.getLocalPackageFile().exists());
-
-            sut.resolveIfNotExisting(r);
-            assertTrue(r.localPomFile.exists(), r.localPomFile.toString());
-            if (!"?".equals(packaging)) {
-                assertTrue(jar.getLocalPackageFile().exists());
-            }
-        }
+    public void failNoLocalPom() {
+        var a = new Artifact("g", "a", "v");
+        when(mru.getLocalPomFile(a)).thenReturn(new File("/non/existing"));
+        var e = assertThrows(MissingPomFileException.class, () -> {
+            sut.resolveDependencies(a);
+        });
+        assertEquals("Local .m2 folder does not contain a pom file for g:a:v:null:0@null", e.getMessage());
     }
 
     @Test
-    public void pomResolutionFailureHandling() {
-        var r = new ResolutionResult("g:a:?:1", "http://non.existing.repo/m2/");
-        assertThrows(NoResolvedResultException.class, () -> sut.resolveIfNotExisting(r));
+    public void failNonExistingDepRepo() {
+        assertThrows(ResolutionException.class, () -> {
+            resolveTestPom("non-existing-dep-repo.pom");
+        });
     }
 
     @Test
-    public void pomResolutionLogging_NeedResolution() {
-        var r = new ResolutionResult("io.vertx:vertx-core:jar:4.2.4", MAVEN_CENTRAL);
-        FileUtils.deleteQuietly(r.localPomFile);
-        FileUtils.deleteQuietly(r.getLocalPackageFile());
-        sut.resolveIfNotExisting(r);
-        TestLoggerUtils.assertLogsContain(ShrinkwrapResolver.class, "INFO Resolving/downloading POM file that does not exist in .m2 folder ...");
-    }
-
-    @Test
-    public void pomResolutionLogging_PreExists() {
-        var r = new ResolutionResult("io.vertx:vertx-core:jar:4.2.4", MAVEN_CENTRAL);
-        sut.resolveIfNotExisting(r);
-        TestLoggerUtils.clearLog();
-        sut.resolveIfNotExisting(r);
-        TestLoggerUtils.assertLogsContain(ShrinkwrapResolver.class, "INFO Found artifact in .m2 folder: io.vertx:vertx-core:jar:4.2.4 (%s)", MAVEN_CENTRAL);
+    public void failNonExistingDep() {
+        assertThrows(ResolutionException.class, () -> {
+            resolveTestPom("non-existing-dep.pom");
+        });
     }
 
     @Test
     public void resolveDirectDependencies() {
         var actual = resolveTestPom("basic.pom");
-        var expected = new HashSet<ResolutionResult>();
-        expected.add(JSR305);
-        expected.add(COMMONS_LANG3);
-        expected.add(REMLA);
-
+        var expected = Set.of(JSR305, COMMONS_LANG3, REMLA);
         assertEquals(expected, actual);
     }
 
     @Test
     public void resolveDirectDependenciesWithTraiilingSlash() {
         var actual = resolveTestPom("basic-with-trailing-repo-slashes.pom");
-        var expected = new HashSet<ResolutionResult>();
-        expected.add(JSR305);
-        expected.add(COMMONS_LANG3);
-        expected.add(REMLA);
-
+        var expected = Set.of(JSR305, COMMONS_LANG3, REMLA);
         assertEquals(expected, actual);
     }
 
     @Test
     public void resolveTransitiveDependencies() {
         var actual = resolveTestPom("transitive.pom");
-        var expected = new HashSet<ResolutionResult>();
-        expected.add(COMMONS_TEXT);
-        expected.add(COMMONS_LANG3);
-
+        var expected = Set.of(COMMONS_TEXT, COMMONS_LANG3);
         assertEquals(expected, actual);
     }
 
@@ -159,42 +130,30 @@ public class ShrinkwrapResolverTest {
 
     @Test
     public void unresolvableDependencies() {
-        assertThrows(NoResolvedResultException.class, () -> {
+        assertThrows(ResolutionException.class, () -> {
             resolveTestPom("unresolvable.pom");
         });
     }
 
-    private static final ResolutionResult JSR305 = new ResolutionResult(//
-            "com.google.code.findbugs:jsr305:jar:3.0.2", //
-            MAVEN_CENTRAL);
+    private static final Artifact JSR305 = central("com.google.code.findbugs:jsr305:3.0.2:jar");
+    private static final Artifact SLF4J = central("org.slf4j:slf4j-api:1.7.32:jar");
+    private static final Artifact COMMONS_LANG3 = central("org.apache.commons:commons-lang3:3.9:jar");
+    private static final Artifact COMMONS_TEXT = central("org.apache.commons:commons-text:1.8:jar");
+    private static final Artifact OKIO = central("com.squareup.okio:okio:3.0.0:jar");
+    private static final Artifact OPENTEST = central("org.opentest4j:opentest4j:1.2.0:jar");
+    private static final Artifact REMLA = central("remla:mylib:0.0.5:jar") //
+            .setRepository("https://gitlab.com/api/v4/projects/26117144/packages/maven/");
 
-    private static final ResolutionResult SLF4J = new ResolutionResult(//
-            "org.slf4j:slf4j-api:jar:1.7.32", //
-            MAVEN_CENTRAL);
+    private static Artifact central(String coord) {
+        var parts = coord.split(":");
+        return new Artifact(parts[0], parts[1], parts[2], parts[3]).setRepository(CENTRAL);
+    }
 
-    private static final ResolutionResult COMMONS_LANG3 = new ResolutionResult(//
-            "org.apache.commons:commons-lang3:jar:3.9", //
-            MAVEN_CENTRAL);
-
-    private static final ResolutionResult COMMONS_TEXT = new ResolutionResult(//
-            "org.apache.commons:commons-text:jar:1.8", //
-            MAVEN_CENTRAL);
-
-    private static final ResolutionResult OKIO = new ResolutionResult(//
-            "com.squareup.okio:okio:jar:3.0.0", //
-            MAVEN_CENTRAL);
-
-    private static final ResolutionResult OPENTEST = new ResolutionResult(//
-            "org.opentest4j:opentest4j:jar:1.2.0", //
-            MAVEN_CENTRAL);
-
-    private static final ResolutionResult REMLA = new ResolutionResult(//
-            "remla:mylib:jar:0.0.5", //
-            "https://gitlab.com/api/v4/projects/26117144/packages/maven/");
-
-    private Set<ResolutionResult> resolveTestPom(String pathToPom) {
+    private Set<Artifact> resolveTestPom(String pathToPom) {
         var fullPath = Path.of(ShrinkwrapResolverTest.class.getSimpleName(), pathToPom);
-        File pom = ResourceUtils.getTestResource(fullPath.toString());
-        return sut.resolveDependenciesFromPom(pom, MAVEN_CENTRAL_REPO);
+        var pom = ResourceUtils.getTestResource(fullPath.toString());
+        var someArtifact = new Artifact("...", "...", "...", "...");
+        when(mru.getLocalPomFile(someArtifact)).thenReturn(pom);
+        return sut.resolveDependencies(someArtifact);
     }
 }

@@ -27,6 +27,11 @@
             <artifactId>commons</artifactId>
             <version>${version.commons}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.fasten-project</groupId>
+            <artifactId>maven-downloader</artifactId>
+            <version>0.0.19-SNAPSHOT</version>
+        </dependency>
 
         <!-- maven -->
 
@@ -90,24 +95,6 @@
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
             <version>4.9.2</version>
-        </dependency>
-
-        <!-- metadata db -->
-        <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
-            <version>3.16.21</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.fasten</groupId>
-            <artifactId>core-metadata</artifactId>
-            <version>0.0.19</version>
-        </dependency>
-        <dependency>
-            <!-- TODO remove this dependency (functionality should be native since jOOQ v3.15 -->
-            <groupId>com.github.t9t.jooq</groupId>
-            <artifactId>jooq-postgresql-json</artifactId>
-            <version>4.0.0</version>
         </dependency>
     </dependencies>
 

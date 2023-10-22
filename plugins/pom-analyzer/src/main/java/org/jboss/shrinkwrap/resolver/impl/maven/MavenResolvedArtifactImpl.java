@@ -65,20 +65,19 @@ public class MavenResolvedArtifactImpl extends MavenArtifactInfoImpl implements 
 
     private final File file;
 
-    private MavenResolvedArtifactImpl(MavenCoordinate mavenCoordinate, String resolvedVersion, boolean snapshotVersion,
-            String extension, File file, ScopeType scopeType, MavenArtifactInfo[] dependencies) {
+    private MavenResolvedArtifactImpl(MavenCoordinate mavenCoordinate, String resolvedVersion, boolean snapshotVersion, String extension, File file, ScopeType scopeType,
+            MavenArtifactInfo[] dependencies) {
         super(mavenCoordinate, resolvedVersion, snapshotVersion, extension, scopeType, dependencies, false);
         this.file = file;
     }
 
-    private MavenResolvedArtifactImpl(final Artifact artifact, final ScopeType scopeType,
-            final List<DependencyNode> children, boolean optional) {
+    private MavenResolvedArtifactImpl(final Artifact artifact, final ScopeType scopeType, final List<DependencyNode> children, boolean optional) {
         super(artifact, scopeType, children, optional);
         this.file = artifactToFile(artifact);
     }
 
     // <new> (1/3)
-    public static Set<String[]> artifactRepositories = null;
+    public static Set<dev.c0ps.maveneasyindex.Artifact> deps = null;
     // </new>
 
     /**
@@ -92,11 +91,8 @@ public class MavenResolvedArtifactImpl extends MavenArtifactInfoImpl implements 
         final DependencyNode root = artifactResult.getRequest().getDependencyNode();
 
         // <new> (2/3)
-        if(artifactRepositories != null) {
-            String coordinate = artifact.toString();
-            String url = getUrl(artifactResult.getRepository());
-            File file = artifact.getFile();
-            artifactRepositories.add(new String[] {coordinate, url, file.getAbsolutePath() });
+        if (deps != null) {
+            deps.add(toCopsArtifact(artifact, getUrl(artifactResult.getRepository())));
         }
         // </new>
 
@@ -116,9 +112,21 @@ public class MavenResolvedArtifactImpl extends MavenArtifactInfoImpl implements 
     }
 
     // <new> (3/3)
+    private static dev.c0ps.maveneasyindex.Artifact toCopsArtifact(Artifact artifact, String repository) {
+        if (!repository.endsWith("/")) {
+            repository += "/";
+        }
+        return new dev.c0ps.maveneasyindex.Artifact(//
+                artifact.getGroupId(), //
+                artifact.getArtifactId(), //
+                artifact.getVersion(), //
+                artifact.getExtension()) //
+                        .setRepository(repository);
+    }
+
     private static String getUrl(ArtifactRepository repository) {
-        if(repository instanceof RemoteRepository) {
-            return ((RemoteRepository)repository).getUrl();
+        if (repository instanceof RemoteRepository) {
+            return ((RemoteRepository) repository).getUrl();
         } else {
             return String.format("n/a (%s)", repository.getClass().getSimpleName());
         }
@@ -131,8 +139,7 @@ public class MavenResolvedArtifactImpl extends MavenArtifactInfoImpl implements 
             throw new IllegalArgumentException("Type must be specified.");
         }
 
-        final FormatProcessor<? super MavenResolvedArtifact, RETURNTYPE> processor = FormatProcessors.find(
-                MavenResolvedArtifact.class, returnType);
+        final FormatProcessor<? super MavenResolvedArtifact, RETURNTYPE> processor = FormatProcessors.find(MavenResolvedArtifact.class, returnType);
 
         return processor.process(this, returnType);
     }
@@ -154,9 +161,8 @@ public class MavenResolvedArtifactImpl extends MavenArtifactInfoImpl implements 
 
     @Override
     public String toString() {
-        return "MavenResolvedArtifactImpl [mavenCoordinate=" + mavenCoordinate + ", resolvedVersion=" + resolvedVersion
-                + ", snapshotVersion=" + snapshotVersion + ", extension=" + extension + ", dependencies="
-                + Arrays.toString(dependencies) + "]";
+        return "MavenResolvedArtifactImpl [mavenCoordinate=" + mavenCoordinate + ", resolvedVersion=" + resolvedVersion + ", snapshotVersion=" + snapshotVersion + ", extension=" + extension
+                + ", dependencies=" + Arrays.toString(dependencies) + "]";
     }
 
     /**
@@ -233,7 +239,7 @@ public class MavenResolvedArtifactImpl extends MavenArtifactInfoImpl implements 
                     FileInputStream fis = null;
                     try {
                         File fileEntry = new File(directory, entry);
-                        //Do not add zip entries for directories
+                        // Do not add zip entries for directories
                         if (fileEntry.isFile()) {
                             fis = new FileInputStream(fileEntry);
                             zipFile.putNextEntry(new ZipEntry(entry));
@@ -269,8 +275,7 @@ public class MavenResolvedArtifactImpl extends MavenArtifactInfoImpl implements 
         }
 
         private static String getEntryPath(final File root, final File file) {
-            return file.getAbsolutePath().substring(root.getAbsolutePath().length() + 1)
-                .replace(File.separatorChar, '/');
+            return file.getAbsolutePath().substring(root.getAbsolutePath().length() + 1).replace(File.separatorChar, '/');
         }
     }
 }

@@ -15,75 +15,98 @@
  */
 package eu.f4sten.pomanalyzer;
 
-import static dev.c0ps.maven.MavenUtilities.MAVEN_CENTRAL_REPO;
-import static eu.f4sten.infra.utils.MavenRepositoryUtils.checkGetRequest;
-import static eu.f4sten.pomanalyzer.data.Coordinates.toCoordinate;
-import static java.lang.String.format;
+import static dev.c0ps.commons.Asserts.assertTrue;
 
+import java.lang.module.ResolutionException;
 import java.time.Duration;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
 
+import org.jboss.shrinkwrap.resolver.api.InvalidConfigurationFileException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dev.c0ps.diapper.AssertArgs;
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.franz.Lane;
 import dev.c0ps.maven.PomExtractor;
-import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
+import eu.f4sten.infra.exceptions.UnrecoverableError;
+import eu.f4sten.infra.kafka.LaneManagement;
+import eu.f4sten.infra.kafka.SimpleErrorMessage;
 import eu.f4sten.infra.utils.MavenRepositoryUtils;
 import eu.f4sten.infra.utils.TimedExecutor;
-import eu.f4sten.pomanalyzer.data.ResolutionResult;
-import eu.f4sten.pomanalyzer.exceptions.NoArtifactRepositoryException;
-import eu.f4sten.pomanalyzer.utils.DatabaseUtils;
+import eu.f4sten.mavendownloader.data.IngestionData;
+import eu.f4sten.mavendownloader.data.IngestionStatus;
+import eu.f4sten.mavendownloader.utils.ArtifactFinder;
+import eu.f4sten.mavendownloader.utils.IngestionDatabase;
+import eu.f4sten.pomanalyzer.utils.CompletionTracker;
 import eu.f4sten.pomanalyzer.utils.EffectiveModelBuilder;
-import eu.f4sten.pomanalyzer.utils.PackagingFixer;
-import eu.f4sten.pomanalyzer.utils.ProgressTracker;
 import eu.f4sten.pomanalyzer.utils.ShrinkwrapResolver;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 public class Main implements Runnable {
 
+    private static final int MAX_TRIES_PER_COORD = 3;
+
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
-    private final ProgressTracker tracker;
-    private final MavenRepositoryUtils repo;
     private final EffectiveModelBuilder modelBuilder;
     private final PomExtractor extractor;
-    private final DatabaseUtils db;
     private final ShrinkwrapResolver resolver;
     private final Kafka kafka;
-    private final PomAnalyzerArgs args;
-    private final PackagingFixer fixer;
-    private final TimedExecutor exec;
+    private final ArtifactFinder finder;
+    private final TimedExecutor timedExec;
+    private final IngestionDatabase idb;
+    private final LaneManagement lm;
+    private final MavenRepositoryUtils m2utils;
+    private final CompletionTracker tracker;
 
-    private final Date startedAt = new Date();
+    private final String kafkaTopicIn;
+    private final String kafkaTopicOut;
+    private final String kafkaTopicRequested;
+
+    private final Date startOfMainAt = new Date();
+    private Date startOfOrigAt;
+    private LinkedList<CurrentArtifact> queue = new LinkedList<>();
+    private Set<Artifact> requeued = new HashSet<>();
 
     @Inject
-    public Main(ProgressTracker tracker, MavenRepositoryUtils repo, EffectiveModelBuilder modelBuilder, PomExtractor extractor, DatabaseUtils db, ShrinkwrapResolver resolver, Kafka kafka, PomAnalyzerArgs args,
-            PackagingFixer fixer, TimedExecutor timedExec) {
-        this.tracker = tracker;
-        this.repo = repo;
+    public Main(EffectiveModelBuilder modelBuilder, PomExtractor extractor, ShrinkwrapResolver resolver, Kafka kafka, ArtifactFinder finder, TimedExecutor timedExec, IngestionDatabase idb,
+            LaneManagement lm, MavenRepositoryUtils m2utils, CompletionTracker tracker, //
+            @Named("kafka.topic.downloaded") String kafkaTopicIn, //
+            @Named("kafka.topic.analyzed") String kafkaTopicOut, //
+            @Named("kafka.topic.requested") String kafkaTopicRequested) {
         this.modelBuilder = modelBuilder;
         this.extractor = extractor;
-        this.db = db;
         this.resolver = resolver;
         this.kafka = kafka;
-        this.args = args;
-        this.fixer = fixer;
-        this.exec = timedExec;
+        this.finder = finder;
+        this.timedExec = timedExec;
+        this.idb = idb;
+        this.lm = lm;
+        this.m2utils = m2utils;
+        this.tracker = tracker;
+        this.kafkaTopicIn = kafkaTopicIn;
+        this.kafkaTopicOut = kafkaTopicOut;
+        this.kafkaTopicRequested = kafkaTopicRequested;
     }
 
     @Override
     public void run() {
         try {
-            AssertArgs.assertFor(args)//
-                    .notNull(a -> a.kafkaIn, "kafka input topic") //
-                    .notNull(a -> a.kafkaOut, "kafka output topic");
-
-            LOG.info("Subscribing to '{}', will publish in '{}' ...", args.kafkaIn, args.kafkaOut);
-            kafka.subscribe(args.kafkaIn, Artifact.class, this::consumeWithTimeout);
+            LOG.info("Subscribing to '{}', will publish in '{}' ...", kafkaTopicIn, kafkaTopicOut);
+            kafka.subscribe(kafkaTopicIn, Artifact.class, (orig, lane) -> {
+                LOG.info("######################################## Consuming next {} record {} ...", lane, orig);
+                if (!lm.shouldProcess(orig, lane)) {
+                    LOG.info("Lane management stopped further processing of artifact {} on lane {}", orig, lane);
+                    return;
+                }
+                lm.reportProgress(orig, lane);
+                processAll(orig, lane);
+            });
             while (true) {
                 LOG.debug("Polling ...");
                 kafka.poll();
@@ -93,101 +116,237 @@ public class Main implements Runnable {
         }
     }
 
-    private void consumeWithTimeout(Artifact id, Lane lane) {
-        LOG.info("Consuming next {} record {} ...", lane, toCoordinate(id));
-        var artifact = bootstrapFirstResolutionResultFromInput(id);
+    public void processAll(Artifact orig, Lane lane) {
 
-        var execId = format("%s (%s)", artifact.coordinate, artifact.artifactRepository);
-        exec.run(execId, () -> {
-            tracker.startNextOriginal(id);
-            tracker.registerRetry(artifact, lane);
-            runAndCatch(artifact, lane);
-            tracker.pruneRetries(artifact, lane);
-        });
-    }
+        startOfOrigAt = new Date();
 
-    private static ResolutionResult bootstrapFirstResolutionResultFromInput(Artifact id) {
-        return new ResolutionResult(toCoordinate(id), MAVEN_CENTRAL_REPO);
-    }
+        tracker.clearMemory();
+        queue.add(new CurrentArtifact(orig, null, orig, lane));
 
-    private void runAndCatch(ResolutionResult artifact, Lane lane) {
-        try {
-            if (tracker.shouldSkip(artifact, lane)) {
-                LOG.info("Skipping coordinate {}", artifact.coordinate);
+        while (!queue.isEmpty()) {
+
+            // make sure the outer poll does not timeout
+            kafka.sendHeartbeat();
+
+            var cur = queue.pop();
+            if (tracker.shouldSkip(cur.a)) {
+                LOG.info("Skipping {} (has already been processed)", cur.a);
                 return;
             }
-            process(artifact, lane);
-        } catch (Exception e) {
-            tracker.executionCrash(artifact, lane);
+            tracker.markStarted(cur.a);
 
-            LOG.warn("Execution failed for {} (original: {})", artifact.coordinate, toCoordinate(tracker.getCurrentOriginal()), e);
-
-            boolean isRuntimeExceptionAndNoSubtype = RuntimeException.class.equals(e.getClass());
-            boolean isWrapped = isRuntimeExceptionAndNoSubtype && e.getCause() != null;
-
-            // FIXME
-            var msg = "TODO";
-            kafka.publish(msg, args.kafkaOut, Lane.ERROR);
+            timedExec.run(cur.id(), () -> {
+                try {
+                    processOne(cur);
+                } catch (Exception e) {
+                    var s = idb.markCrashed(cur.a, e);
+                    if (s.numCrashes < MAX_TRIES_PER_COORD) {
+                        // crash (and restart) ...
+                        throw new UnrecoverableError(e);
+                    }
+                    // ... or prevent endless crash loop
+                    publishError(cur, s, "caught exception");
+                }
+            });
         }
     }
 
-    private void process(ResolutionResult artifact, Lane lane) {
-        var duration = Duration.between(startedAt.toInstant(), new Date().toInstant());
-        var msg = "Processing {} ... (dependency of: {}, started at: {}, running for: {})";
-        LOG.info(msg, artifact.coordinate, toCoordinate(tracker.getCurrentOriginal()), startedAt, duration);
-        exec.delayExecution();
+    private void processOne(CurrentArtifact cur) {
+        logRuntime(cur);
 
-        var consumedAt = new Date();
-        kafka.sendHeartbeat();
-        resolver.resolveIfNotExisting(artifact);
-
-        // merge pom with all its parents and resolve properties
-        var m = modelBuilder.buildEffectiveModel(artifact.localPomFile);
-
-        // extract details
-        var result = extractor.process(m);
-
-        // some artifact repos return redirects (e.g., HTTPS), use targets instead
-        result.artifactRepository = checkGetRequest(artifact.artifactRepository).url;
-        if (result.artifactRepository == null) {
-            throw new NoArtifactRepositoryException(artifact.artifactRepository);
+        var s = idb.getCurrentResult(cur.a);
+        // dependencies do not get marked automatically
+        if (s == null) {
+            s = idb.markResolved(cur.a);
         }
 
-        // packagingType is often bogus, check and possibly fix
-        result.packagingType = fixer.checkPackage(result.pom());
-
-        store(result.pom(), lane, consumedAt);
-
-        // for performance (and to prevent cycles), remember visited coordinates in-mem
-        tracker.markCompletionInMem(artifact.coordinate, lane);
-        tracker.markCompletionInMem(result.pom().toCoordinate(), lane);
-
-        // resolve dependencies to
-        // 1) have dependencies
-        // 2) identify artifact sources
-        // 3) make sure all dependencies exist in local .m2 folder
-        var deps = resolver.resolveDependenciesFromPom(artifact.localPomFile, result.artifactRepository);
-
-        // resolution can be different for dependencies, so 'process' them independently
-        deps.forEach(dep -> {
-            runAndCatch(dep, lane);
-        });
-
-        // to stay crash resilient, only mark in DB once all deps have been processed
-        tracker.markCompletionInDb(artifact.coordinate, lane);
-        tracker.markCompletionInDb(result.pom().toCoordinate(), lane);
-    }
-
-    private void store(Pom result, Lane lane, Date consumedAt) {
-        LOG.info("Storing results for {} ...", result.toCoordinate());
-        LOG.debug("Finished: {}", result);
-        if (tracker.existsInDatabase(result.toCoordinate(), lane)) {
-            // reduce the opportunity for race-conditions by re-checking before storing
+        // directly resolving transitive deps can discover new dependencies
+        if (!hasAlreadyBeenIngested(cur, s)) {
+            publishIngestion(cur);
             return;
         }
-        db.save(result);
-        // FIXME
-        var m = "TODO";
-        kafka.publish(m, args.kafkaOut, lane);
+
+        try {
+            switch (s.status) {
+            case CRASHED:
+                if (s.numCrashes >= MAX_TRIES_PER_COORD) {
+                    // prevent endless crash loop...
+                    publishError(cur, s, "cached");
+                    return;
+                }
+                // ... or repeat normal processing
+                continueResolved(cur);
+                break;
+            case RESOLVED:
+                continueResolved(cur);
+                break;
+            case DEPS_MISSING:
+                continueDepsMissing(cur);
+                break;
+            case DONE:
+                // handle like DEP_MISSING to ensure processing of all deps
+                continueDepsMissing(cur);
+                break;
+            default:
+                var msg = String.format("Status of %s was %s, but should be one of [CRASHED, RESOLVED, DEPS_MISSING, DONE]", s.artifact, s.status);
+                throw new IllegalStateException(msg);
+            }
+        } catch (InvalidConfigurationFileException e) {
+            LOG.error("Cannot resolve {}: pom.xml cannot be parsed", cur.a);
+            for (var i = 0; i < MAX_TRIES_PER_COORD - 1; i++) {
+                idb.markCrashed(cur.a, e);
+            }
+            var s2 = idb.markCrashed(cur.a, e);
+            publishError(cur, s2, "invalid pom.xml");
+        }
+    }
+
+    private void logRuntime(CurrentArtifact cur) {
+        var now = new Date().toInstant();
+        var mainDuration = Duration.between(startOfMainAt.toInstant(), now);
+        var origDuration = Duration.between(startOfOrigAt.toInstant(), now);
+
+        LOG.info("########## (Run started at: {} / {})", startOfMainAt, mainDuration);
+
+        var msg = cur.isOriginalArtifact() //
+                ? ">> Processing next original {} ..."
+                : "Processing next artifact {} ... (origin started at {} / {})";
+        LOG.info(msg, cur.a, startOfOrigAt, origDuration);
+
+    }
+
+    private boolean hasAlreadyBeenIngested(CurrentArtifact cur, IngestionData s) {
+        if (cur.isOriginalArtifact()) {
+            return true;
+        }
+        var pom = m2utils.getLocalPomFile(cur.a);
+        return pom.exists();
+    }
+
+    private void continueResolved(CurrentArtifact cur) {
+
+        logContinueState(cur, IngestionStatus.RESOLVED);
+
+        cur = findOrFixArtifact(cur);
+
+        var pomFile = m2utils.getLocalPomFile(cur.a);
+        var m = modelBuilder.buildEffectiveModel(pomFile);
+        var pom = extractor.process(m);
+
+        var found = finder.findArtifact(pom.pom());
+        if (found == null) {
+            new ResolutionException("..?!");
+        }
+
+        pom.artifactRepository = found.repository;
+        pom.packagingType = found.packaging;
+        pom.releaseDate = found.releaseDate;
+
+        LOG.info("Successful pom extraction for {} ...", cur.a);
+        idb.markDepsMissing(pom.pom());
+
+        continueDepsMissing(cur);
+    }
+
+    private void requeue(CurrentArtifact cur) {
+        queue.add(cur);
+        requeued.add(cur.a);
+        tracker.markAborted(cur.a);
+    }
+
+    private CurrentArtifact findOrFixArtifact(CurrentArtifact cur) {
+        var b = finder.findArtifact(cur.a);
+        if (cur.a.equals(b)) {
+            return cur;
+        }
+        LOG.info("Fixed artifact {} --> {}", cur.a, b);
+        return new CurrentArtifact(b, cur.parent, cur.origin, cur.lane);
+    }
+
+    private void continueDepsMissing(CurrentArtifact cur) {
+        logContinueState(cur, IngestionStatus.DEPS_MISSING);
+
+        if (requeued.contains(cur.a)) {
+            requeued.remove(cur.a);
+            LOG.info("Finishing re-queued artifact {} ...", cur.a);
+            publishResult(cur);
+            tracker.markCompleted(cur.a);
+        } else {
+            LOG.info("Resolving dependencies of {} ...", cur.a);
+            var deps = resolver.resolveDependencies(cur.a);
+            LOG.info("Queueing the {} dependencies of {} ...", deps.size(), cur.a);
+            var numSkips = new int[1];
+            deps.forEach(dep -> {
+                if (tracker.shouldSkip(dep)) {
+                    numSkips[0]++;
+                } else {
+                    queue.add(cur.child(dep));
+                }
+            });
+            if (numSkips[0] > 0) {
+                LOG.info("Skipped {} dependencies (have already been processed)", numSkips[0]);
+            }
+            requeue(cur);
+        }
+    }
+
+    private void logContinueState(CurrentArtifact cur, IngestionStatus state) {
+        var msg = cur.isOriginalArtifact() //
+                ? "Continue {}: {} ... (original)"
+                : "Continue {}: {} ... (dep of: {}, orig: {})";
+        LOG.info(msg, state, cur.a, cur.parent, cur.origin);
+    }
+
+    private void publishResult(CurrentArtifact cur) {
+        var msg = cur.isOriginalArtifact() //
+                ? "Publishing result for artifact {} on {} ... (original)"
+                : "Publishing result for artifact {} on {} ... (dep of: {}, orig: {})";
+        LOG.info(msg, cur.a, cur.lane, cur.parent, cur.origin);
+        idb.markDone(cur.a);
+        kafka.publish(cur.a, kafkaTopicOut, cur.lane);
+    }
+
+    private void publishIngestion(CurrentArtifact cur) {
+        LOG.info("Dependency {} will be ingested separately ...", cur.a);
+        kafka.publish(cur.a, kafkaTopicRequested, Lane.PRIORITY);
+    }
+
+    private void publishError(CurrentArtifact c, IngestionData s, String reason) {
+        assertTrue(c.a.equals(s.artifact));
+        assertTrue(s.status == IngestionStatus.CRASHED);
+        var msg = c.isOriginalArtifact() //
+                ? "Pom extraction of {} has crashed for {} times ({}), not attempting again. (original)"
+                : "Pom extraction of {} has crashed for {} times ({}), not attempting again. (dep of: {}, orig: {})";
+        LOG.error(msg, s.artifact, s.numCrashes, reason, c.parent, c.origin);
+        kafka.publish(new SimpleErrorMessage<Artifact>(s.artifact, s.stacktrace), kafkaTopicOut, Lane.ERROR);
+    }
+
+    private static class CurrentArtifact {
+
+        public Artifact a;
+        public final Artifact parent;
+        public final Artifact origin;
+        public final Lane lane;
+
+        CurrentArtifact(Artifact a, Artifact parent, Artifact orig, Lane lane) {
+            this.a = a;
+            this.parent = parent;
+            this.origin = orig;
+            this.lane = lane;
+        }
+
+        public String id() {
+            return isOriginalArtifact() //
+                    ? String.format("%s (%s, original)", a, lane)
+                    : String.format("%s (%s, dep of: %s, orig: %s)", a, lane, parent, origin);
+        }
+
+        public boolean isOriginalArtifact() {
+            return a.equals(origin);
+        }
+
+        public CurrentArtifact child(Artifact child) {
+            return new CurrentArtifact(child, a, origin, lane);
+        }
     }
 }

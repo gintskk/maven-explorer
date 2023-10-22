@@ -26,15 +26,13 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Model;
-import org.jboss.shrinkwrap.resolver.api.InvalidConfigurationFileException;
-import org.jboss.shrinkwrap.resolver.api.NoResolvedResultException;
 import org.jboss.shrinkwrap.resolver.impl.maven.logging.LogRepositoryListener;
 import org.jboss.shrinkwrap.resolver.impl.maven.logging.LogTransferListener;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import dev.c0ps.commons.ResourceUtils;
-import dev.c0ps.maven.MavenUtilities;
+import eu.f4sten.pomanalyzer.exceptions.InvalidPomFileException;
 
 public class EffectiveModelBuilderTest {
 
@@ -49,16 +47,17 @@ public class EffectiveModelBuilderTest {
 
     @Test
     public void invalidSyntax() {
-        assertThrows(InvalidConfigurationFileException.class, () -> {
+        assertThrows(InvalidPomFileException.class, () -> {
             buildEffectiveModel("invalid-syntax.pom");
         });
     }
 
     @Test
-    public void invalidNonExistingDep() {
-        assertThrows(NoResolvedResultException.class, () -> {
-            buildEffectiveModel("invalid-non-existing-dep.pom");
-        });
+    public void invalidNonExistingDepDoesNotCrash() {
+        var m = buildEffectiveModel("invalid-non-existing-dep.pom");
+        var deps = m.getDependencies();
+        assertEquals(1, deps.size());
+        assertEquals("non.existing", deps.get(0).getGroupId());
     }
 
     @Test
@@ -116,8 +115,6 @@ public class EffectiveModelBuilderTest {
     private static Model buildEffectiveModel(String relPathToPom) {
         var pathToPom = EffectiveModelBuilderTest.class.getSimpleName() + "/" + relPathToPom;
         var pom = ResourceUtils.getTestResource(pathToPom);
-        // resolve once to make sure all dependencies exist in local repo
-        new ShrinkwrapResolver().resolveDependenciesFromPom(pom, MavenUtilities.MAVEN_CENTRAL_REPO);
         var sut = new EffectiveModelBuilder();
         return sut.buildEffectiveModel(pom);
     }

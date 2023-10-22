@@ -15,9 +15,6 @@
  */
 package eu.f4sten.pomanalyzer.utils;
 
-import static java.lang.String.format;
-import static java.util.stream.IntStream.range;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.jboss.shrinkwrap.resolver.api.maven.ScopeType.COMPILE;
 import static org.jboss.shrinkwrap.resolver.api.maven.ScopeType.PROVIDED;
 import static org.jboss.shrinkwrap.resolver.api.maven.ScopeType.RUNTIME;
@@ -25,11 +22,11 @@ import static org.jboss.shrinkwrap.resolver.api.maven.ScopeType.SYSTEM;
 import static org.jboss.shrinkwrap.resolver.api.maven.ScopeType.TEST;
 
 import java.io.File;
-import java.util.HashMap;
+import java.lang.module.ResolutionException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import org.jboss.shrinkwrap.resolver.api.NoResolvedResultException;
 import org.jboss.shrinkwrap.resolver.api.maven.ConfigurableMavenResolverSystem;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.repository.MavenChecksumPolicy;
@@ -40,9 +37,11 @@ import org.jboss.shrinkwrap.resolver.impl.maven.MavenResolvedArtifactImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import eu.f4sten.pomanalyzer.data.ResolutionResult;
+import dev.c0ps.maveneasyindex.Artifact;
+import eu.f4sten.infra.utils.MavenRepositoryUtils;
+import eu.f4sten.pomanalyzer.exceptions.MissingPomFileException;
 import eu.f4sten.pomanalyzer.exceptions.NoArtifactRepositoryException;
-import eu.f4sten.pomanalyzer.exceptions.UnresolvablePomFileException;
+import jakarta.inject.Inject;
 
 public class ShrinkwrapResolver {
 
@@ -56,79 +55,79 @@ public class ShrinkwrapResolver {
     private static final String REPO_CENTRAL_OLD_NON_HTTPS = "http://repo1.maven.org/maven2/";
 
     // old http://download.java.net/maven/2/ is deprecated, see https://stackoverflow.com/a/22656393/3617482
-    private static final MavenRemoteRepository REPO_JAVA_NET = getRepo("java-net", "https://maven.java.net/content/groups/public/");
+    // private static final MavenRemoteRepository REPO_JAVA_NET = getRepo("java-net", "https://maven.java.net/content/groups/public/");
 
     // old http://bits.netbeans.org/maven2/ is deprecated, see https://netbeans.apache.org/about/oracle-transition.html
-    private static final MavenRemoteRepository REPO_NETBEANS = getRepo("netbeans", "https://netbeans.apidesign.org/maven2/");
+    // private static final MavenRemoteRepository REPO_NETBEANS = getRepo("netbeans", "https://netbeans.apidesign.org/maven2/");
 
     private static final Logger LOG = LoggerFactory.getLogger(ShrinkwrapResolver.class);
 
-    public Set<ResolutionResult> resolveDependenciesFromPom(File pom, String artifactRepository) {
-        var coordToResult = new HashMap<String, ResolutionResult>();
+    private final MavenRepositoryUtils utils;
 
-        // two iterations: 0) resolving and (potential) deletion 1) get artifactRepos
-        range(0, 2).forEach(i -> {
-            resolvePom(pom, artifactRepository).forEach(res -> {
-                // ignore known dependencies or those that should be skipped (e.g., exist in DB)
-                if (coordToResult.containsKey(res.coordinate)) {
-                    return;
-                }
-
-                // remember identified artifactRepository
-                if (res.artifactRepository.startsWith("http")) {
-                    coordToResult.put(res.coordinate, res);
-                    return;
-                }
-
-                // some packages lack information about the artifact repository in the .m2
-                // folder, caused byold Maven tools and FileLockExceptions in multi-threaded
-                // executions. This can be recovered through deletion and retry.
-                File f = res.getLocalPackageFile();
-                if (i == 0 && f.exists() && f.isFile()) {
-                    LOG.info("Deleting local package to enforce repository discovery on re-download: {}", res.coordinate);
-                    f.delete();
-                } else {
-                    // deletion "on-the-fly" does not work on windows
-                    if (IS_OS_WINDOWS) {
-                        LOG.error("Cannot find artifactRepository for {}.", res.coordinate);
-                    } else {
-                        throw new NoArtifactRepositoryException(res.coordinate);
-                    }
-                }
-            });
-        });
-
-        return new HashSet<>(coordToResult.values());
+    @Inject
+    public ShrinkwrapResolver(MavenRepositoryUtils utils) {
+        this.utils = utils;
     }
 
-    private static Set<ResolutionResult> resolvePom(File f, String artifactRepository) {
-        var res = new HashSet<String[]>();
+    public Set<Artifact> resolveDependencies(Artifact a) {
+        var deps = new HashSet<Artifact>();
+
+        resolve(a).forEach(dep -> {
+            // remember when repository could be identified
+            if (dep.repository.startsWith("http")) {
+                deps.add(dep);
+                return;
+            }
+
+            LOG.error("Could not identify the artifact repository for dependency {}", dep);
+            throw new NoArtifactRepositoryException(dep.toString());
+        });
+
+        return deps;
+    }
+
+    private Set<Artifact> resolve(Artifact a) {
+        var localPomFile = getLocalPomFile(a);
+        var deps = new HashSet<Artifact>();
         try {
-            MavenResolvedArtifactImpl.artifactRepositories = res;
+            MavenResolvedArtifactImpl.deps = deps;
 
             var r = Maven.configureResolver() //
                     .withClassPathResolution(false) //
                     .withMavenCentralRepo(true);
 
+            // TODO it should not be necessary to add additional repositories when starting from a pom
             // only add repo if it is different
-            r = addRepoIfNotMatching(r, getRepo(artifactRepository), REPO_CENTRAL, REPO_CENTRAL_OLD, REPO_CENTRAL_NON_HTTPS, REPO_CENTRAL_OLD_NON_HTTPS);
+//             r = addRepoIfNotMatching(r, getRepo(a.repository), REPO_CENTRAL, REPO_CENTRAL_OLD, REPO_CENTRAL_NON_HTTPS, REPO_CENTRAL_OLD_NON_HTTPS);
 
             // add replacements for popular repositories that were migrated
-            r = addRepoIfNotMatching(r, REPO_JAVA_NET, artifactRepository);
-            r = addRepoIfNotMatching(r, REPO_NETBEANS, artifactRepository);
+            // r = addRepoIfNotMatching(r, REPO_JAVA_NET, a.repository);
+            // r = addRepoIfNotMatching(r, REPO_NETBEANS, a.repository);
 
             r //
-                    .loadPomFromFile(f) //
+                    .loadPomFromFile(localPomFile) //
                     .importDependencies(COMPILE, RUNTIME, PROVIDED, SYSTEM, TEST) //
                     .resolve() //
                     .withTransitivity() //
                     .asResolvedArtifact();
-            MavenResolvedArtifactImpl.artifactRepositories = null;
-            return toResolutionResult(res);
+            MavenResolvedArtifactImpl.deps = null;
+            return deps;
         } catch (IllegalArgumentException e) {
-            // no dependencies are declared, so no resolution required
+            // no dependencies are declared in pom
             return new HashSet<>();
+        } catch (NoResolvedResultException e) {
+            throw new ResolutionException(e);
         }
+    }
+
+    private File getLocalPomFile(Artifact a) {
+        var localPomFile = utils.getLocalPomFile(a);
+        if (!localPomFile.exists()) {
+            var msg = String.format("Local .m2 folder does not contain a pom file for %s", a);
+            LOG.error(msg);
+            throw new MissingPomFileException(msg);
+        }
+        return localPomFile;
     }
 
     private static ConfigurableMavenResolverSystem addRepoIfNotMatching(ConfigurableMavenResolverSystem r, MavenRemoteRepository newRepo, String... repoUrls) {
@@ -143,49 +142,9 @@ public class ShrinkwrapResolver {
         return r.withRemoteRepo(newRepo);
     }
 
-    private static Set<ResolutionResult> toResolutionResult(Set<String[]> res) {
-        return res.stream() //
-                .map(a -> {
-                    if (!a[1].endsWith("/")) {
-                        a[1] += "/";
-                    }
-                    return new ResolutionResult(a[0], a[1]);
-                }) //
-                .collect(Collectors.toSet());
-    }
-
-    public void resolveIfNotExisting(ResolutionResult artifact) {
-        if (artifact.localPomFile.exists()) {
-            LOG.info("Found artifact in .m2 folder: {} ({})", artifact.coordinate, artifact.artifactRepository);
-            return;
-        }
-        LOG.info("Resolving/downloading POM file that does not exist in .m2 folder ...");
-        resolvePom(artifact);
-        if (!artifact.localPomFile.exists()) {
-            throw new UnresolvablePomFileException(artifact.toString());
-        }
-    }
-
-    private void resolvePom(ResolutionResult artifact) {
-        var r = Maven.configureResolver() //
-                .withClassPathResolution(false) //
-                .withMavenCentralRepo(true);
-
-        // only add repo if it is different
-        r = addRepoIfNotMatching(r, getRepo(artifact.artifactRepository), REPO_CENTRAL, REPO_CENTRAL_OLD);
-
-        // add replacements for popular repositories that were migrated
-        r = addRepoIfNotMatching(r, REPO_JAVA_NET, artifact.artifactRepository);
-        r = addRepoIfNotMatching(r, REPO_NETBEANS, artifact.artifactRepository);
-
-        r //
-                .resolve(artifact.coordinate.replace("?", "pom")) //
-                .withTransitivity() //
-                .asResolvedArtifact();
-    }
-
     private static MavenRemoteRepository getRepo(String url) {
-        return getRepo(getRepoName(url), url);
+        var name = getRepoName(url);
+        return getRepo(name, url);
     }
 
     private static MavenRemoteRepository getRepo(String name, String url) {
@@ -196,10 +155,9 @@ public class ShrinkwrapResolver {
     }
 
     private static String getRepoName(String url) {
-        if ("https://repo1.maven.org/maven2/".equals(url)) {
+        if (REPO_CENTRAL.equals(url)) {
             return "central";
         }
-        var simplifiedUrl = url.replaceAll("[^a-zA-Z0-9-]+", "");
-        return format("%s-%s", ShrinkwrapResolver.class.getName(), simplifiedUrl);
+        return url.replaceAll("[^a-zA-Z0-9-]+", "");
     }
 }

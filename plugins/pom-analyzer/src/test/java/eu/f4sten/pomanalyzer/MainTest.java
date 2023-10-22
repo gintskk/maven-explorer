@@ -22,43 +22,44 @@ import org.junit.jupiter.api.Test;
 
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.maven.PomExtractor;
+import eu.f4sten.infra.kafka.LaneManagement;
 import eu.f4sten.infra.utils.MavenRepositoryUtils;
 import eu.f4sten.infra.utils.TimedExecutor;
-import eu.f4sten.pomanalyzer.utils.DatabaseUtils;
+import eu.f4sten.mavendownloader.utils.ArtifactFinder;
+import eu.f4sten.mavendownloader.utils.IngestionDatabase;
+import eu.f4sten.pomanalyzer.utils.CompletionTracker;
 import eu.f4sten.pomanalyzer.utils.EffectiveModelBuilder;
-import eu.f4sten.pomanalyzer.utils.PackagingFixer;
-import eu.f4sten.pomanalyzer.utils.ProgressTracker;
 import eu.f4sten.pomanalyzer.utils.ShrinkwrapResolver;
 
 public class MainTest {
 
-    private MavenRepositoryUtils repo;
     private EffectiveModelBuilder modelBuilder;
     private PomExtractor extractor;
-    private DatabaseUtils db;
     private ShrinkwrapResolver resolver;
     private Kafka kafka;
-    private PomAnalyzerArgs args;
-    private PackagingFixer fixer;
+    private ArtifactFinder af;
     private TimedExecutor exec;
+    private IngestionDatabase idb;
+    private LaneManagement lm;
+    private MavenRepositoryUtils mru;
+    private CompletionTracker tracker;
 
     private Main sut;
-    private ProgressTracker tracker;
 
     @BeforeEach
     public void setup() {
-        tracker = mock(ProgressTracker.class);
-        repo = mock(MavenRepositoryUtils.class);
         modelBuilder = mock(EffectiveModelBuilder.class);
         extractor = mock(PomExtractor.class);
-        db = mock(DatabaseUtils.class);
         resolver = mock(ShrinkwrapResolver.class);
         kafka = mock(Kafka.class);
-        args = new PomAnalyzerArgs();
-        fixer = mock(PackagingFixer.class);
+        af = mock(ArtifactFinder.class);
         exec = mock(TimedExecutor.class);
+        idb = mock(IngestionDatabase.class);
+        lm = mock(LaneManagement.class);
+        mru = mock(MavenRepositoryUtils.class);
+        tracker = mock(CompletionTracker.class);
 
-        sut = new Main(tracker, repo, modelBuilder, extractor, db, resolver, kafka, args, fixer, exec);
+        sut = new Main(modelBuilder, extractor, resolver, kafka, af, exec, idb, lm, mru, tracker, "in", "out", "requests");
 
 //        when(extractor.process(eq(null))).thenReturn(new Pom());
 //        when(extractor.process(any(Model.class))).thenReturn(new Pom());
