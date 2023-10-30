@@ -28,7 +28,6 @@ jobs:
         with:
           servers: >
             [
-              { "id": "github-fasten-project-fasten", "username": "${{ github.actor }}", "password": "${env.GITHUB_TOKEN}" },
               { "id": "github-cops", "username": "${{ github.actor }}", "password": "${env.GITHUB_TOKEN}" }
             ]
 

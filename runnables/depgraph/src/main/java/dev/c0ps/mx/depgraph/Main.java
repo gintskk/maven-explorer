@@ -1,0 +1,178 @@
+/*
+ * Copyright 2021 Delft University of Technology
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package dev.c0ps.mx.depgraph;
+
+import static dev.c0ps.commons.MemoryUsageUtils.logMemoryUsage;
+
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import dev.c0ps.franz.Kafka;
+import dev.c0ps.io.IoUtils;
+import dev.c0ps.io.TRef;
+import dev.c0ps.libhttpd.HttpServer;
+import dev.c0ps.maven.MavenUtilities;
+import dev.c0ps.maven.data.Pom;
+import dev.c0ps.maven.resolution.MavenResolverData;
+import dev.c0ps.maven.rest.DependencyGraphResolutionService;
+import dev.c0ps.maveneasyindex.Artifact;
+import dev.c0ps.mx.downloader.utils.IngestionDatabase;
+import dev.c0ps.mx.infra.kafka.DefaultTopics;
+import jakarta.inject.Inject;
+
+public class Main implements Runnable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+    private static final int NUM_TO_REPORT = 1000;
+
+    private final HttpServer server;
+    private final Kafka kafka;
+    private final IoUtils io;
+    private final MavenResolverData data;
+    private final DepGraphArgs args;
+    private final IngestionDatabase db;
+
+    private Set<Pom> poms = new HashSet<>();
+    private long lastStoredAt = 0;
+    private int numPomsAddedSinceLastStore = 0;
+
+    @Inject
+    public Main(HttpServer server, Kafka kafka, IoUtils io, MavenResolverData data, DepGraphArgs args, IngestionDatabase db) {
+        this.server = server;
+        this.kafka = kafka;
+        this.io = io;
+        this.data = data;
+        this.args = args;
+        this.db = db;
+    }
+
+    @Override
+    public void run() {
+        server.register(DependencyGraphResolutionService.class);
+        server.start();
+
+        LOG.info("Storage location for poms: {}", dbFile());
+
+        initPomsAndDataContainers();
+
+        kafka.subscribe(DefaultTopics.ANALYZED, Artifact.class, (a, l) -> {
+            numPomsAddedSinceLastStore++;
+            var s = db.getCurrentResult(a);
+
+            logProgress(s.pom);
+            var pom = MavenUtilities.simplify(s.pom);
+            poms.add(pom);
+
+            data.add(pom);
+
+            if (shouldStore()) {
+                store();
+            }
+        });
+        while (!Thread.interrupted()) {
+            kafka.poll();
+        }
+    }
+
+    private void initPomsAndDataContainers() {
+        var f = dbFile();
+        if (f.exists()) {
+            time("Reading poms from file system", () -> {
+                poms = io.readFromZip(dbFile(), new TRef<HashSet<Pom>>() {});
+            });
+
+            LOG.info("Registering {} poms with data containers", poms.size());
+            var numAdded = 0;
+            for (var pom : poms) {
+                numAdded++;
+                data.add(pom);
+                if ((numAdded % NUM_TO_REPORT) == 0) {
+                    LOG.info("Added {} more coordinates to data containers ...", NUM_TO_REPORT);
+                }
+            }
+            time("Cleanup resolver data", () -> {
+                data.removeOutdatedPomRegistrations();
+            });
+            LOG.info("Data containers ready");
+
+            logMemoryUsage();
+
+        } else {
+            LOG.info("Starting to collect poms from scratch ...");
+            poms = new HashSet<>();
+        }
+    }
+
+    private boolean shouldStore() {
+        var isOldEnough = now() - lastStoredAt > args.minTimeExportMS;
+        var hasAddedEnoughItems = numPomsAddedSinceLastStore >= args.minNumExport;
+        return isOldEnough && hasAddedEnoughItems;
+    }
+
+    private void store() {
+        var tmp = tmpFile();
+        time("Storing poms to file system", () -> {
+            LOG.info("Storing {} poms in total, {} new", poms.size(), numPomsAddedSinceLastStore);
+            io.writeToZip(poms, tmp);
+            // reduces likelihood of corruption as rename is MUCH faster than store
+            io.move(tmp, dbFile());
+            kafka.commit();
+
+            numPomsAddedSinceLastStore = 0;
+            lastStoredAt = now();
+        });
+
+        LOG.info("Removing outdated Pom registrations ...");
+        data.removeOutdatedPomRegistrations();
+    }
+
+    private File tmpFile() {
+        var f = Paths.get(io.getBaseFolder().getAbsolutePath(), "mvn_depgraph", "poms.json-tmp").toFile();
+        return f;
+    }
+
+    private File dbFile() {
+        var f = Paths.get(io.getBaseFolder().getAbsolutePath(), "mvn_depgraph", "poms.zip").toFile();
+        return f;
+    }
+
+    private void logProgress(Pom pom) {
+        LOG.debug("Adding coordinate {} ...", pom.toCoordinate());
+        var wasSomethingAdded = numPomsAddedSinceLastStore > 0;
+        var isHittingProgressThreshold = (numPomsAddedSinceLastStore % NUM_TO_REPORT) == 0;
+        if (wasSomethingAdded && isHittingProgressThreshold) {
+            LOG.info("Added {} more coordinates through Kafka ...", NUM_TO_REPORT);
+            logMemoryUsage();
+        }
+    }
+
+    private static void time(String activity, Runnable r) {
+        LOG.info("{} ...", activity);
+        var start = now();
+        r.run();
+        var end = now();
+        LOG.info("{} took {} ms", activity, end - start);
+    }
+
+    private static long now() {
+        return System.currentTimeMillis();
+    }
+}

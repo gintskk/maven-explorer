@@ -19,8 +19,6 @@ jobs:
         with:
           servers: >
             [
-              { "id": "github-fasten-project-fasten", "username": "${{ github.actor }}", "password": "${env.GITHUB_TOKEN}" },
-              { "id": "github-fasten-project-data-processing", "username": "${{ github.actor }}", "password": "${env.GITHUB_TOKEN}" },
               { "id": "github-cops", "username": "${{ github.actor }}", "password": "${env.GITHUB_TOKEN}" }
             ]
 
@@ -46,25 +44,25 @@ jobs:
           echo "version_patch_next=$PATCH_NEXT" >> $GITHUB_ENV
           echo "version_next=${MAJOR}.${MINOR}.${PATCH_NEXT}-SNAPSHOT" >> $GITHUB_ENV
         env:
-          GITHUB_TOKEN: ${{ secrets.FASTEN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COPS_TOKEN }}
 
       - name: Update all projects to release version
         run: |
           mvn -B -ntp versions:set -DnewVersion=${{ env.version }}
         env:
-          GITHUB_TOKEN: ${{ secrets.FASTEN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COPS_TOKEN }}
 
-      - name: Update version.txt in loader to release version
+      - name: Update version.txt in runner to release version
         run: |
-          cd infrastructure/loader
+          cd runner
           echo "${{ env.version }}" > src/main/resources/version.txt
-          ../../set_VersionImplTest_constant.sh ${{ env.version }}
+          ./set_VersionImplTest_constant.sh ${{ env.version }}
 
       - name: Build and deploy Maven packages
         run: |
           mvn -B -ntp clean deploy
         env:
-          GITHUB_TOKEN: ${{ secrets.FASTEN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COPS_TOKEN }}
 
       - name: Commit and tag the release version
         run: |
@@ -76,10 +74,11 @@ jobs:
 
       - name: Build Docker image and push to ghcr.io
         run: |
-          cd infrastructure/loader
+          cd runner
           echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           # Multiple .jar files in the folder will break Dockerfile
           rm target/*-sources.jar
+          rm target/*-javadoc.jar
           IMG=ghcr.io/${{ github.repository }}
           docker build \
             --tag $IMG:${{ env.version }} \
@@ -93,13 +92,13 @@ jobs:
         run: |
           mvn -B -ntp versions:set -DnewVersion=${{ env.version_next }}
         env:
-          GITHUB_TOKEN: ${{ secrets.FASTEN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COPS_TOKEN }}
 
-      - name: Update version.txt in loader to next snapshot release
+      - name: Update version.txt in runner to next snapshot release
         run: |
-          cd infrastructure/loader
+          cd runner
           echo "${{ env.version_next }}" > src/main/resources/version.txt
-          ../../releng/set_VersionImplTest_constant.sh ${{ env.version_next }}
+          ./set_VersionImplTest_constant.sh ${{ env.version_next }}
 
       - name: Commit the next snapshot release
         run: |

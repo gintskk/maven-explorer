@@ -1,0 +1,75 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>dev.c0ps.maven-explorer</groupId>
+        <artifactId>root</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>runnables</artifactId>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>examples</module>
+        <module>index-crawler</module>
+        <module>downloader</module>
+        <module>m2-cleanup</module>
+        <module>pom-analyzer</module>
+        <module>depgraph</module>
+    </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>dev.c0ps.maven-explorer</groupId>
+            <artifactId>infrastructure</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.franz</groupId>
+            <artifactId>api</artifactId>
+            <version>${version.franz}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.c0ps.diapper</groupId>
+            <artifactId>api</artifactId>
+            <version>${version.diapper}</version>
+        </dependency>
+
+        <!-- required annotations for servlets (served through HttpServerImpl) -->
+        <dependency>
+            <groupId>dev.c0ps.libhttpd</groupId>
+            <artifactId>api</artifactId>
+            <version>${version.libhttpd}</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>search-for-unused-or-undeclared-deps</id>
+                            <configuration>
+                                <ignoredUnusedDeclaredDependencies combine.children="append">
+                                    <!-- basic dependencies that are supposed to be used in most plugins -->
+                                    <ignoredUnusedDeclaredDependency>dev.c0ps.maven-explorer:infrastructure</ignoredUnusedDeclaredDependency>
+                                    <ignoredUnusedDeclaredDependency>dev.c0ps.franz:api</ignoredUnusedDeclaredDependency>
+                                </ignoredUnusedDeclaredDependencies>
+                                <ignoredDependencies combine.children="append">
+                                    <ignoredDependency>dev.c0ps:commons</ignoredDependency>
+                                </ignoredDependencies>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

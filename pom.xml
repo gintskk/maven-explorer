@@ -7,20 +7,20 @@
         <version>0.0.5</version>
     </parent>
 
-    <groupId>eu.fasten-project</groupId>
+    <groupId>dev.c0ps.maven-explorer</groupId>
     <artifactId>root</artifactId>
-    <version>0.0.19-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
-        <module>infrastructure/infrastructure</module>
-        <module>infrastructure/loader</module>
-        <module>plugins</module>
+        <module>libs</module>
+        <module>runnables</module>
+        <module>runner</module>
     </modules>
 
     <properties>
         <!-- automatically set through: mvn versions:set -DupdateBuildOutputTimestampPolicy=always -DnewVersion=... -->
-        <project.build.outputTimestamp>2023-09-14T01:37:29Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2023-10-31T02:32:59Z</project.build.outputTimestamp>
 
         <version.maven>3.9.5</version.maven>
 
@@ -35,10 +35,6 @@
     </properties>
 
     <repositories>
-        <repository>
-            <id>github-fasten-project-fasten</id>
-            <url>https://maven.pkg.github.com/fasten-project/fasten/</url>
-        </repository>
         <repository>
             <id>github-cops</id>
             <url>https://maven.pkg.github.com/cops-lab/packages/</url>
