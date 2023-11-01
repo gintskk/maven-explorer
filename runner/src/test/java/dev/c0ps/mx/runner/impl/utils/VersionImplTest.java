@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 public class VersionImplTest {
 
-    private static final String CURRENT_VERSION = "0.1.1";
+    private static final String CURRENT_VERSION = "0.1.2-SNAPSHOT";
     private static String srcVersion;
 
     @BeforeAll
