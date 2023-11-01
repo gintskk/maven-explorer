@@ -62,19 +62,19 @@ public class MavenDownloader {
 
     public void download(Artifact a) {
         var coord = String.format("%s:%s:%s:%s", a.groupId, a.artifactId, a.version, a.packaging);
-        download(coord, a.repository);
+        download(coord, a.repository, true);
 
         for (var classifier : Set.of("sources", "javadoc")) {
             try {
                 var sources = String.format("%s:%s:%s:jar:%s", a.groupId, a.artifactId, a.version, classifier);
-                download(sources, a.repository);
+                download(sources, a.repository, false);
             } catch (ResolutionException e) {
                 // ignore exceptions for classifier jars
             }
         }
     }
 
-    private void download(String coordinate, String repository) {
+    private void download(String coordinate, String repository, boolean includeTransitiveDeps) {
         var repositories = unique(CENTRAL, repository);
         LOG.info("Downloading coordinate '{}' from repositories [{}] ...", coordinate, join(", ", repositories));
 
@@ -83,6 +83,7 @@ public class MavenDownloader {
             var props = new Properties();
             props.setProperty("artifact", coordinate);
             props.setProperty("remoteRepositories", join(",", repositories));
+            props.setProperty("transitive", Boolean.toString(includeTransitiveDeps));
 
             var req = new DefaultInvocationRequest();
             req.setOutputHandler(new PrintStreamHandler(System.out, true));
