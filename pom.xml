@@ -9,7 +9,7 @@
 
     <groupId>dev.c0ps.maven-explorer</groupId>
     <artifactId>root</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -20,7 +20,7 @@
 
     <properties>
         <!-- automatically set through: mvn versions:set -DupdateBuildOutputTimestampPolicy=always -DnewVersion=... -->
-        <project.build.outputTimestamp>2023-11-01T01:02:24Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2023-11-01T01:05:54Z</project.build.outputTimestamp>
 
         <version.maven>3.9.5</version.maven>
 
