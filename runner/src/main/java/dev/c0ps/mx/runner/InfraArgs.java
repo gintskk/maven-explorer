@@ -80,8 +80,8 @@ public class InfraArgs {
     @Parameter(names = "--dir.completion", arity = 1, description = "Folder for all marker files of the completion progress")
     public File dirCompletion;
 
-    @Parameter(names = "--dir.ingestiondb", arity = 1, description = "Folder for all marker files of the ingestion database")
-    public File dirIngestionDb;
+    @Parameter(names = "--dir.results", arity = 1, description = "Folder for all (partial) results")
+    public File dirResults;
 
     @Parameter(names = "--dir.mavenHome", arity = 1)
     public File dirMavenHome = new File("/usr/share/maven/");

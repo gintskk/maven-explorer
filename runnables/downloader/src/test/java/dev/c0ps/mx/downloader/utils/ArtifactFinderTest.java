@@ -50,14 +50,14 @@ public class ArtifactFinderTest {
     private static final String CENTRAL_OLD = "https://repo1.maven.org/maven2/";
     private static final String JUNIT = "junit:junit:4.12:jar:1417709863000";
 
-    private IngestionDatabase db;
+    private ResultsDatabase db;
     private MavenRepositoryUtils utils;
 
     private ArtifactFinder sut;
 
     @BeforeEach
     public void setup() {
-        db = mock(IngestionDatabase.class);
+        db = mock(ResultsDatabase.class);
         utils = mock(MavenRepositoryUtils.class);
         var actualUtils = new MavenRepositoryUtils(null);
 
@@ -153,7 +153,7 @@ public class ArtifactFinderTest {
         var s = new IngestionData();
         s.artifact = mock(Artifact.class);
         s.status = FOUND;
-        when(db.getCurrentResult(a(JUNIT, CENTRAL))).thenReturn(s);
+        when(db.get(a(JUNIT, CENTRAL))).thenReturn(s);
 
         var actual = sut.findArtifact(a(JUNIT, CENTRAL));
 
@@ -165,7 +165,7 @@ public class ArtifactFinderTest {
         var s = new IngestionData();
         s.artifact = mock(Artifact.class);
         s.status = REQUESTED;
-        when(db.getCurrentResult(a(JUNIT, CENTRAL))).thenReturn(s);
+        when(db.get(a(JUNIT, CENTRAL))).thenReturn(s);
 
         var actual = sut.findArtifact(a(JUNIT, CENTRAL));
 
@@ -177,7 +177,7 @@ public class ArtifactFinderTest {
         var s = new IngestionData();
         s.artifact = mock(Artifact.class);
         s.status = REQUESTED;
-        when(db.getCurrentResult(a(JUNIT, CENTRAL))).thenReturn(s);
+        when(db.get(a(JUNIT, CENTRAL))).thenReturn(s);
 
         var actual = sut.findArtifact(a(JUNIT, CENTRAL));
         assertNotNull(actual);

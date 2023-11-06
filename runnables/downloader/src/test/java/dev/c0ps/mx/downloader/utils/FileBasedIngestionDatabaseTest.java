@@ -18,6 +18,7 @@ package dev.c0ps.mx.downloader.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -26,7 +27,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +41,7 @@ import dev.c0ps.maven.data.PomBuilder;
 import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.mx.downloader.data.IngestionData;
 import dev.c0ps.mx.downloader.data.IngestionStatus;
+import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.infra.utils.Version;
 
 public class FileBasedIngestionDatabaseTest {
@@ -54,9 +55,10 @@ public class FileBasedIngestionDatabaseTest {
     private File tempDir;
 
     private IoUtils io;
-    private FileBasedIngestionDatabase sut;
+    private FileBasedResultsDatabase sut;
 
     private String toolVersion;
+    private MavenRepositoryUtils mru;
 
     @BeforeEach
     public void setup() {
@@ -69,14 +71,25 @@ public class FileBasedIngestionDatabaseTest {
             }
         });
         toolVersion = "1.2.3";
-        sut = new FileBasedIngestionDatabase(v, io, tempDir);
+
+        mru = mock(MavenRepositoryUtils.class);
+
+        when(mru.getMavenFilePathNonStatic(any(File.class), eq(a(1)), eq("result"))).thenReturn(f(a(1)));
+
+        sut = new FileBasedResultsDatabase(v, io, mru, tempDir);
     }
 
     @Test
     public void unknownIsNull() {
-        var actual = sut.getCurrentResult(a(1));
+        var actual = sut.get(a(1));
         assertNull(actual);
         verifyNoMoreInteractions(io);
+    }
+
+    @Test
+    public void usesMavenRepositoryUtils() {
+        sut.get(a(1));
+        verify(mru).getMavenFilePathNonStatic(eq(tempDir), eq(a(1)), eq("result"));
     }
 
     @Test
@@ -86,7 +99,7 @@ public class FileBasedIngestionDatabaseTest {
         d.status = IngestionStatus.FOUND;
         mockRead(d);
 
-        var actual = sut.getCurrentResult(a(1));
+        var actual = sut.get(a(1));
         assertSame(d, actual);
     }
 
@@ -320,14 +333,8 @@ public class FileBasedIngestionDatabaseTest {
     }
 
     private File f(Artifact a) {
-
-        return Paths.get(tempDir.getAbsolutePath(), //
-                "g", //
-                "g2", //
-                "a", //
-                a.version, //
-                a.artifactId + "-" + a.version + ".ingestion" //
-        ).toFile();
+        // simplified for testing
+        return new File(tempDir, "v" + a.version);
     }
 
     private IngestionData d(Artifact a) {

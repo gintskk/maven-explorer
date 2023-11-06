@@ -22,8 +22,9 @@ import com.google.inject.Provides;
 import dev.c0ps.diapper.InjectorConfig;
 import dev.c0ps.diapper.InjectorConfigBase;
 import dev.c0ps.io.IoUtils;
-import dev.c0ps.mx.downloader.utils.FileBasedIngestionDatabase;
-import dev.c0ps.mx.downloader.utils.IngestionDatabase;
+import dev.c0ps.mx.downloader.utils.FileBasedResultsDatabase;
+import dev.c0ps.mx.downloader.utils.ResultsDatabase;
+import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.infra.utils.Version;
 import jakarta.inject.Named;
 
@@ -31,7 +32,7 @@ import jakarta.inject.Named;
 public class Config extends InjectorConfigBase {
 
     @Provides
-    public IngestionDatabase provideIngestionDatabase(Version v, IoUtils io, @Named("dir.ingestiondb") File dirIngestionDb) {
-        return new FileBasedIngestionDatabase(v, io, dirIngestionDb);
+    public ResultsDatabase provideIngestionDatabase(Version v, IoUtils io, MavenRepositoryUtils mru, @Named("dir.results") File dirResults) {
+        return new FileBasedResultsDatabase(v, io, mru, dirResults);
     }
 }

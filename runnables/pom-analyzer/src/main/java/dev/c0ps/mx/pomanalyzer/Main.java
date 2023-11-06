@@ -35,7 +35,7 @@ import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.mx.downloader.data.IngestionData;
 import dev.c0ps.mx.downloader.data.IngestionStatus;
 import dev.c0ps.mx.downloader.utils.ArtifactFinder;
-import dev.c0ps.mx.downloader.utils.IngestionDatabase;
+import dev.c0ps.mx.downloader.utils.ResultsDatabase;
 import dev.c0ps.mx.infra.exceptions.UnrecoverableError;
 import dev.c0ps.mx.infra.kafka.LaneManagement;
 import dev.c0ps.mx.infra.kafka.SimpleErrorMessage;
@@ -59,7 +59,7 @@ public class Main implements Runnable {
     private final Kafka kafka;
     private final ArtifactFinder finder;
     private final TimedExecutor timedExec;
-    private final IngestionDatabase idb;
+    private final ResultsDatabase db;
     private final LaneManagement lm;
     private final MavenRepositoryUtils m2utils;
     private final CompletionTracker tracker;
@@ -74,7 +74,7 @@ public class Main implements Runnable {
     private Set<Artifact> requeued = new HashSet<>();
 
     @Inject
-    public Main(EffectiveModelBuilder modelBuilder, PomExtractor extractor, ShrinkwrapResolver resolver, Kafka kafka, ArtifactFinder finder, TimedExecutor timedExec, IngestionDatabase idb,
+    public Main(EffectiveModelBuilder modelBuilder, PomExtractor extractor, ShrinkwrapResolver resolver, Kafka kafka, ArtifactFinder finder, TimedExecutor timedExec, ResultsDatabase db,
             LaneManagement lm, MavenRepositoryUtils m2utils, CompletionTracker tracker, //
             @Named("kafka.topic.downloaded") String kafkaTopicIn, //
             @Named("kafka.topic.analyzed") String kafkaTopicOut, //
@@ -85,7 +85,7 @@ public class Main implements Runnable {
         this.kafka = kafka;
         this.finder = finder;
         this.timedExec = timedExec;
-        this.idb = idb;
+        this.db = db;
         this.lm = lm;
         this.m2utils = m2utils;
         this.tracker = tracker;
@@ -139,7 +139,7 @@ public class Main implements Runnable {
                 try {
                     processOne(cur);
                 } catch (Exception e) {
-                    var s = idb.markCrashed(cur.a, e);
+                    var s = db.markCrashed(cur.a, e);
                     if (s.numCrashes < MAX_TRIES_PER_COORD) {
                         // crash (and restart) ...
                         throw new UnrecoverableError(e);
@@ -154,10 +154,10 @@ public class Main implements Runnable {
     private void processOne(CurrentArtifact cur) {
         logRuntime(cur);
 
-        var s = idb.getCurrentResult(cur.a);
+        var s = db.get(cur.a);
         // dependencies do not get marked automatically
         if (s == null) {
-            s = idb.markResolved(cur.a);
+            s = db.markResolved(cur.a);
         }
 
         // directly resolving transitive deps can discover new dependencies
@@ -194,9 +194,9 @@ public class Main implements Runnable {
         } catch (InvalidConfigurationFileException e) {
             LOG.error("Cannot resolve {}: pom.xml cannot be parsed", cur.a);
             for (var i = 0; i < MAX_TRIES_PER_COORD - 1; i++) {
-                idb.markCrashed(cur.a, e);
+                db.markCrashed(cur.a, e);
             }
-            var s2 = idb.markCrashed(cur.a, e);
+            var s2 = db.markCrashed(cur.a, e);
             publishError(cur, s2, "invalid pom.xml");
         }
     }
@@ -243,7 +243,7 @@ public class Main implements Runnable {
         pom.releaseDate = found.releaseDate;
 
         LOG.info("Successful pom extraction for {} ...", cur.a);
-        idb.markDepsMissing(pom.pom());
+        db.markDepsMissing(pom.pom());
 
         continueDepsMissing(cur);
     }
@@ -302,7 +302,7 @@ public class Main implements Runnable {
                 ? "Publishing result for artifact {} on {} ... (original)"
                 : "Publishing result for artifact {} on {} ... (dep of: {}, orig: {})";
         LOG.info(msg, cur.a, cur.lane, cur.parent, cur.origin);
-        idb.markDone(cur.a);
+        db.markDone(cur.a);
         kafka.publish(cur.a, kafkaTopicOut, cur.lane);
     }
 

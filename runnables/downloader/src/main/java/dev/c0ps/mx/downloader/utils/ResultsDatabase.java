@@ -19,9 +19,9 @@ import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.mx.downloader.data.IngestionData;
 
-public interface IngestionDatabase {
+public interface ResultsDatabase {
 
-    IngestionData getCurrentResult(Artifact a);
+    IngestionData get(Artifact a);
 
     IngestionData markRequested(Artifact a);
 

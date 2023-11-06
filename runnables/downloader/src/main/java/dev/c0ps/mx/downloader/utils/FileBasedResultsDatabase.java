@@ -33,21 +33,24 @@ import dev.c0ps.mx.infra.utils.Version;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
-public class FileBasedIngestionDatabase implements IngestionDatabase {
+public class FileBasedResultsDatabase implements ResultsDatabase {
 
     private final Version toolVersion;
     private final IoUtils io;
+    private final MavenRepositoryUtils mru;
     private final File baseDir;
 
     @Inject
-    public FileBasedIngestionDatabase(Version toolVersion, IoUtils io, @Named("IngestionDatabase.baseDir") File baseDir) {
+    public FileBasedResultsDatabase(Version toolVersion, IoUtils io, MavenRepositoryUtils mru, //
+            @Named("IngestionDatabase.baseDir") File baseDir) {
         this.toolVersion = toolVersion;
         this.io = io;
+        this.mru = mru;
         this.baseDir = baseDir;
     }
 
     @Override
-    public IngestionData getCurrentResult(Artifact a) {
+    public IngestionData get(Artifact a) {
         var f = f(a);
         if (!f.exists()) {
             return null;
@@ -138,7 +141,7 @@ public class FileBasedIngestionDatabase implements IngestionDatabase {
     }
 
     private File f(Artifact a) {
-        return MavenRepositoryUtils.getMavenFilePath(baseDir, a, "ingestion");
+        return mru.getMavenFilePathNonStatic(baseDir, a, "result");
     }
 
     private static String getSmaller(String v1, String v2) {

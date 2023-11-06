@@ -48,11 +48,11 @@ public class ArtifactFinder {
 
     private static final String[] PACKAGING_TYPES = new String[] { "jar", "war", "ear", "aar", "ejb" };
 
-    private final IngestionDatabase db;
+    private final ResultsDatabase db;
     private final MavenRepositoryUtils utils;
 
     @Inject
-    public ArtifactFinder(IngestionDatabase db, MavenRepositoryUtils utils) {
+    public ArtifactFinder(ResultsDatabase db, MavenRepositoryUtils utils) {
         this.db = db;
         this.utils = utils;
 
@@ -112,7 +112,7 @@ public class ArtifactFinder {
     }
 
     private Artifact existsLocally(Artifact a) {
-        var s = db.getCurrentResult(a);
+        var s = db.get(a);
         if (s != null && s.status != IngestionStatus.REQUESTED) {
             return s.artifact;
         }

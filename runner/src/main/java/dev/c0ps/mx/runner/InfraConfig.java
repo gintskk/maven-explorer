@@ -218,9 +218,9 @@ public class InfraConfig implements IInjectorConfig {
     }
 
     @Provides
-    @Named("dir.ingestiondb")
-    public File provideDirIngestionDb() {
-        AssertArgs.directoryExists(args, a -> a.dirIngestionDb, "ingestion db folder");
-        return args.dirIngestionDb;
+    @Named("dir.results")
+    public File provideDirResults() {
+        AssertArgs.directoryExists(args, a -> a.dirResults, "results folder");
+        return args.dirResults;
     }
 }

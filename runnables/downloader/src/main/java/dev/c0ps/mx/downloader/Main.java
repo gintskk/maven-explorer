@@ -26,7 +26,7 @@ import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.mx.downloader.data.IngestionData;
 import dev.c0ps.mx.downloader.data.IngestionStatus;
 import dev.c0ps.mx.downloader.utils.ArtifactFinder;
-import dev.c0ps.mx.downloader.utils.IngestionDatabase;
+import dev.c0ps.mx.downloader.utils.ResultsDatabase;
 import dev.c0ps.mx.downloader.utils.MavenDownloader;
 import dev.c0ps.mx.infra.exceptions.UnrecoverableError;
 import dev.c0ps.mx.infra.kafka.DefaultTopics;
@@ -44,14 +44,14 @@ public class Main implements Runnable {
 
     private final TimedExecutor exec;
     private final Kafka kafka;
-    private final IngestionDatabase db;
+    private final ResultsDatabase db;
     private final LaneManagement lm;
     private final ArtifactFinder artifactFinder;
     private final MavenRepositoryUtils utils;
     private final MavenDownloader downloader;
 
     @Inject
-    public Main(TimedExecutor exec, Kafka kafka, IngestionDatabase db, LaneManagement lm, ArtifactFinder artifactFinder, MavenRepositoryUtils utils, MavenDownloader downloader) {
+    public Main(TimedExecutor exec, Kafka kafka, ResultsDatabase db, LaneManagement lm, ArtifactFinder artifactFinder, MavenRepositoryUtils utils, MavenDownloader downloader) {
         this.exec = exec;
         this.kafka = kafka;
         this.db = db;
@@ -73,7 +73,7 @@ public class Main implements Runnable {
     private void download(Artifact a, Lane lane) {
         exec.run(a, () -> {
             LOG.info("######################################## Consuming next {} record {} ...", lane, a);
-            var state = db.getCurrentResult(a);
+            var state = db.get(a);
             if (state == null || state.status == IngestionStatus.REQUESTED) {
                 findAndProcess(a, lane);
             } else {
