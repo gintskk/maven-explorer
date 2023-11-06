@@ -168,7 +168,7 @@ public class CompletionTrackerTest {
         var e = assertThrows(IllegalStateException.class, () -> {
             sut.markAborted(A);
         });
-        assertEquals("Cannot abort a completed artifact (g:a:1.2.3:null:0@null)", e.getMessage());
+        assertEquals("Cannot abort a completed artifact (g:a:1.2.3:null:0@CENTRAL)", e.getMessage());
     }
 
     @Test
@@ -179,7 +179,7 @@ public class CompletionTrackerTest {
         var e = assertThrows(IllegalStateException.class, () -> {
             sut.markAborted(A);
         });
-        assertEquals("Cannot abort a completed artifact (g:a:1.2.3:null:0@null)", e.getMessage());
+        assertEquals("Cannot abort a completed artifact (g:a:1.2.3:null:0@CENTRAL)", e.getMessage());
     }
 
     @Test

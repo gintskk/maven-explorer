@@ -29,7 +29,7 @@
         <version.commons>0.0.6</version.commons>
         <version.io>0.0.2</version.io>
         <version.franz>0.0.4</version.franz>
-        <version.maven-easy-index>0.0.8</version.maven-easy-index>
+        <version.maven-easy-index>0.0.9</version.maven-easy-index>
         <version.libhttpd>0.0.2</version.libhttpd>
         <version.testutils>0.0.6</version.testutils>
     </properties>
