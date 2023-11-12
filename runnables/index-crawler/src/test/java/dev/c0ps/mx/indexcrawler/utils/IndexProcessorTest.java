@@ -30,7 +30,7 @@ import dev.c0ps.maveneasyindex.Artifact;
 
 public class IndexProcessorTest {
 
-    private static final Artifact SOME_MAVEN_ID = mock(Artifact.class);
+    private static final Artifact SOME_MAVEN_ID = new Artifact("g", "a", "1.2.3");
     private static final String SOME_TOPIC = "abcd";
 
     private LocalStore store;
@@ -60,7 +60,7 @@ public class IndexProcessorTest {
         verify(store).getNextIndex();
         verify(utils).exists(123);
         verify(utils).get(123);
-        verify(kafka).publish(SOME_MAVEN_ID, SOME_TOPIC, NORMAL);
+        verify(kafka).publish("g:a:1.2.3", SOME_MAVEN_ID, SOME_TOPIC, NORMAL);
         // second iteration
         verify(utils).exists(124);
     }

@@ -16,6 +16,7 @@
 package dev.c0ps.mx.indexcrawler.utils;
 
 import static dev.c0ps.franz.Lane.NORMAL;
+import static dev.c0ps.mx.infra.utils.MavenRepositoryUtils.toGAV;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,8 +58,10 @@ public class IndexProcessor {
         var artifacts = utils.get(idx);
         LOG.info("Publishing {} coordinates ...", artifacts.size());
         for (var ma : artifacts) {
-            LOG.debug("Publishing: {}:{}:{}", ma.groupId, ma.artifactId, ma.version);
-            kafka.publish(ma, kafkaTopicOut, NORMAL);
+            LOG.debug("Publishing: {}", ma);
+            var gav = toGAV(ma);
+            // use GAV as key to eliminate parallel/duplicate processing in multiple workers
+            kafka.publish(gav, ma, kafkaTopicOut, NORMAL);
         }
     }
 }

@@ -303,12 +303,16 @@ public class Main implements Runnable {
                 : "Publishing result for artifact {} on {} ... (dep of: {}, orig: {})";
         LOG.info(msg, cur.a, cur.lane, cur.parent, cur.origin);
         db.markDone(cur.a);
-        kafka.publish(cur.a, kafkaTopicOut, cur.lane);
+        var gav = MavenRepositoryUtils.toGAV(cur.a);
+        // use GAV as key to eliminate parallel/duplicate processing in multiple workers
+        kafka.publish(gav, cur.a, kafkaTopicOut, cur.lane);
     }
 
     private void publishIngestion(CurrentArtifact cur) {
         LOG.info("Dependency {} will be ingested separately ...", cur.a);
-        kafka.publish(cur.a, kafkaTopicRequested, Lane.PRIORITY);
+        var gav = MavenRepositoryUtils.toGAV(cur.a);
+        // use GAV as key to eliminate parallel/duplicate processing in multiple workers
+        kafka.publish(gav, cur.a, kafkaTopicRequested, Lane.PRIORITY);
     }
 
     private void publishError(CurrentArtifact c, IngestionData s, String reason) {

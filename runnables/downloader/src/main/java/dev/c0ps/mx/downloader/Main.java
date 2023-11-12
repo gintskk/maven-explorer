@@ -177,7 +177,9 @@ public class Main implements Runnable {
 
     private void publish(Artifact a, Lane lane) {
         LOG.info("Publishing result for artifact {} ... ({})", a, lane);
-        kafka.publish(a, DefaultTopics.DOWNLOADED, lane);
+        var gav = MavenRepositoryUtils.toGAV(a);
+        // use GAV as key to eliminate parallel/duplicate processing in multiple workers
+        kafka.publish(gav, a, DefaultTopics.DOWNLOADED, lane);
     }
 
     private void publishError(IngestionData s) {
