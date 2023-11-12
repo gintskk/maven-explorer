@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import dev.c0ps.maveneasyindex.Artifact;
+import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 
 @Disabled
 public class MavenDownloaderTest {
@@ -48,7 +49,7 @@ public class MavenDownloaderTest {
     @BeforeEach
     public void setup() {
         new File(dirM2, "repository").mkdirs();
-        sut = new MavenDownloader(dirBase, dirM2, dirMavenHome);
+        sut = new MavenDownloader(new MavenRepositoryUtils(dirM2), dirBase, dirM2, dirMavenHome);
     }
 
     @Test

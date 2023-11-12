@@ -23,11 +23,11 @@ import org.junit.jupiter.api.Test;
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.maven.PomExtractor;
 import dev.c0ps.mx.downloader.utils.ArtifactFinder;
+import dev.c0ps.mx.downloader.utils.CompletionTracker;
 import dev.c0ps.mx.downloader.utils.ResultsDatabase;
 import dev.c0ps.mx.infra.kafka.LaneManagement;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.infra.utils.TimedExecutor;
-import dev.c0ps.mx.pomanalyzer.utils.CompletionTracker;
 import dev.c0ps.mx.pomanalyzer.utils.EffectiveModelBuilder;
 import dev.c0ps.mx.pomanalyzer.utils.ShrinkwrapResolver;
 

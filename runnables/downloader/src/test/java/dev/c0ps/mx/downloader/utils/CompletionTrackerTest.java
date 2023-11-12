@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.c0ps.mx.pomanalyzer.utils;
+package dev.c0ps.mx.downloader.utils;
 
-import static dev.c0ps.mx.pomanalyzer.utils.CompletionTracker.EXT;
+import static dev.c0ps.mx.downloader.utils.CompletionTracker.EXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;

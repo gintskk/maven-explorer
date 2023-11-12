@@ -24,11 +24,11 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
 
-public class IngestionData {
+public class Result {
 
     public String createdWith;
 
-    public IngestionStatus status;
+    public Status status;
     public Artifact artifact;
     public Pom pom;
     public int numCrashes;

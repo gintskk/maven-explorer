@@ -18,15 +18,20 @@ package dev.c0ps.mx.downloader.utils;
 import static dev.c0ps.mx.infra.utils.MavenRepositoryUtils.toArtifact;
 import static java.lang.String.format;
 
+import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
-import dev.c0ps.mx.downloader.data.IngestionStatus;
+import dev.c0ps.mx.downloader.data.Status;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import jakarta.inject.Inject;
 
@@ -36,10 +41,12 @@ public class ArtifactFinder {
     // to avoid unnecessary downloads on every build. Make sure to re-enable the
     // tests and run them locally for every change in this class.
 
+    private static final Logger LOG = LoggerFactory.getLogger(ArtifactFinder.class);
+
+    private static final Pattern REGEX_PACKAGING = Pattern.compile(".*<\\s*packaging>\\s*([a-zA-Z0-9]+)\\s*<\\s*\\/packaging\\s*>.*", Pattern.DOTALL);
+
     private static final int ONE_HOUR_MS = 1000 * 60 * 60;
     private static final int ONE_DAY_MS = ONE_HOUR_MS * 24;
-
-    private static final Logger LOG = LoggerFactory.getLogger(ArtifactFinder.class);
 
     private static final String HTTPS_CENTRAL = "https://repo.maven.apache.org/maven2/";
     private static final String HTTP_CENTRAL = "http://repo.maven.apache.org/maven2/";
@@ -64,16 +71,61 @@ public class ArtifactFinder {
 
     public Artifact findArtifact(Artifact orig) {
 
-        var a = existsLocally(orig);
-        if (a != null) {
-            return a;
+        var oldA = wasFixedBefore(orig);
+        if (oldA != null) {
+            return oldA;
         }
 
-        a = cloneWithBasicFixes(orig);
+        var a = findArtifactWithStrategies(orig);
+        if (a == null) {
+            LOG.error("Package cannot be found: {}", a);
+            db.markNotFound(orig);
+            return null;
+        }
+
+        if ("pom".equals(a.packaging)) {
+            var nonPom = parsePackagingFromUrl(a);
+            if (a.equals(nonPom)) {
+                LOG.info("Confirmed packaging of {}", a);
+            } else {
+                LOG.info("Updating packaging for {} to {}", a, nonPom.packaging);
+                var b = findArtifactWithStrategies(nonPom);
+                if (b == null) {
+                    LOG.error("Updated package cannot be found: {}", nonPom);
+                } else {
+                    a = b;
+                }
+            }
+        }
+
+        if (a != null) {
+            LOG.error("Marking package as found: {}", a);
+            db.markFound(a);
+        }
+
+        return a;
+    }
+
+    private Artifact wasFixedBefore(Artifact a) {
+        var s = db.get(a);
+        if (s != null && s.status != Status.REQUESTED) {
+            return s.artifact;
+        }
+        return null;
+    }
+
+    private Artifact findArtifactWithStrategies(Artifact orig) {
+
+        var a = cloneWithBasicFixes(orig);
         Artifact fix;
 
         if ((fix = exists(a)) != null) {
             LOG.info("Found: {}", fix);
+
+            if ("pom".equals(fix.packaging)) {
+
+            }
+
             return fix;
         }
 
@@ -108,14 +160,6 @@ public class ArtifactFinder {
         }
 
         // not found
-        return null;
-    }
-
-    private Artifact existsLocally(Artifact a) {
-        var s = db.get(a);
-        if (s != null && s.status != IngestionStatus.REQUESTED) {
-            return s.artifact;
-        }
         return null;
     }
 
@@ -206,8 +250,32 @@ public class ArtifactFinder {
                 }
             }
         }
-
-        db.markFound(a);
         return a;
+    }
+
+    private Artifact parsePackagingFromUrl(Artifact a) {
+
+        var url = utils.getUrl(a);
+        var packaging = parsePackagingFromUrl(url);
+
+        if (packaging.equals(a.packaging)) {
+            return a;
+        } else {
+            var clone = a.clone();
+            clone.packaging = packaging;
+            return clone;
+        }
+    }
+
+    public static String parsePackagingFromUrl(URL url) {
+        try {
+            var data = IOUtils.toString(url, StandardCharsets.UTF_8);
+            var matcher = REGEX_PACKAGING.matcher(data);
+            return matcher.matches() //
+                    ? matcher.group(1)
+                    : "jar";
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

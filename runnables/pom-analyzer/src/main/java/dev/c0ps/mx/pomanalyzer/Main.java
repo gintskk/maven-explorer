@@ -32,16 +32,16 @@ import dev.c0ps.franz.Kafka;
 import dev.c0ps.franz.Lane;
 import dev.c0ps.maven.PomExtractor;
 import dev.c0ps.maveneasyindex.Artifact;
-import dev.c0ps.mx.downloader.data.IngestionData;
-import dev.c0ps.mx.downloader.data.IngestionStatus;
+import dev.c0ps.mx.downloader.data.Result;
+import dev.c0ps.mx.downloader.data.Status;
 import dev.c0ps.mx.downloader.utils.ArtifactFinder;
+import dev.c0ps.mx.downloader.utils.CompletionTracker;
 import dev.c0ps.mx.downloader.utils.ResultsDatabase;
 import dev.c0ps.mx.infra.exceptions.UnrecoverableError;
 import dev.c0ps.mx.infra.kafka.LaneManagement;
 import dev.c0ps.mx.infra.kafka.SimpleErrorMessage;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.infra.utils.TimedExecutor;
-import dev.c0ps.mx.pomanalyzer.utils.CompletionTracker;
 import dev.c0ps.mx.pomanalyzer.utils.EffectiveModelBuilder;
 import dev.c0ps.mx.pomanalyzer.utils.ShrinkwrapResolver;
 import jakarta.inject.Inject;
@@ -139,7 +139,7 @@ public class Main implements Runnable {
                 try {
                     processOne(cur);
                 } catch (Exception e) {
-                    var s = db.markCrashed(cur.a, e);
+                    var s = db.recordCrash(cur.a, e);
                     if (s.numCrashes < MAX_TRIES_PER_COORD) {
                         // crash (and restart) ...
                         throw new UnrecoverableError(e);
@@ -193,10 +193,8 @@ public class Main implements Runnable {
             }
         } catch (InvalidConfigurationFileException e) {
             LOG.error("Cannot resolve {}: pom.xml cannot be parsed", cur.a);
-            for (var i = 0; i < MAX_TRIES_PER_COORD - 1; i++) {
-                db.markCrashed(cur.a, e);
-            }
-            var s2 = db.markCrashed(cur.a, e);
+            db.recordCrash(cur.a, e);
+            var s2 = db.markCrashed(cur.a);
             publishError(cur, s2, "invalid pom.xml");
         }
     }
@@ -215,7 +213,7 @@ public class Main implements Runnable {
 
     }
 
-    private boolean hasAlreadyBeenIngested(CurrentArtifact cur, IngestionData s) {
+    private boolean hasAlreadyBeenIngested(CurrentArtifact cur, Result s) {
         if (cur.isOriginalArtifact()) {
             return true;
         }
@@ -225,7 +223,7 @@ public class Main implements Runnable {
 
     private void continueResolved(CurrentArtifact cur) {
 
-        logContinueState(cur, IngestionStatus.RESOLVED);
+        logContinueState(cur, Status.RESOLVED);
 
         cur = findOrFixArtifact(cur);
 
@@ -264,7 +262,7 @@ public class Main implements Runnable {
     }
 
     private void continueDepsMissing(CurrentArtifact cur) {
-        logContinueState(cur, IngestionStatus.DEPS_MISSING);
+        logContinueState(cur, Status.DEPS_MISSING);
 
         if (requeued.contains(cur.a)) {
             requeued.remove(cur.a);
@@ -290,7 +288,7 @@ public class Main implements Runnable {
         }
     }
 
-    private void logContinueState(CurrentArtifact cur, IngestionStatus state) {
+    private void logContinueState(CurrentArtifact cur, Status state) {
         var msg = cur.isOriginalArtifact() //
                 ? "Continue {}: {} ... (original)"
                 : "Continue {}: {} ... (dep of: {}, orig: {})";
@@ -315,9 +313,9 @@ public class Main implements Runnable {
         kafka.publish(gav, cur.a, kafkaTopicRequested, Lane.PRIORITY);
     }
 
-    private void publishError(CurrentArtifact c, IngestionData s, String reason) {
+    private void publishError(CurrentArtifact c, Result s, String reason) {
         assertTrue(c.a.equals(s.artifact));
-        assertTrue(s.status == IngestionStatus.CRASHED);
+        assertTrue(s.status == Status.CRASHED);
         var msg = c.isOriginalArtifact() //
                 ? "Pom extraction of {} has crashed for {} times ({}), not attempting again. (original)"
                 : "Pom extraction of {} has crashed for {} times ({}), not attempting again. (dep of: {}, orig: {})";

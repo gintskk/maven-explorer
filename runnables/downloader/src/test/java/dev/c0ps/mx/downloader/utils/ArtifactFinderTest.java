@@ -15,8 +15,8 @@
  */
 package dev.c0ps.mx.downloader.utils;
 
-import static dev.c0ps.mx.downloader.data.IngestionStatus.FOUND;
-import static dev.c0ps.mx.downloader.data.IngestionStatus.REQUESTED;
+import static dev.c0ps.mx.downloader.data.Status.FOUND;
+import static dev.c0ps.mx.downloader.data.Status.REQUESTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,6 +28,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -38,7 +41,7 @@ import org.mockito.stubbing.Answer;
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maven.data.PomBuilder;
 import dev.c0ps.maveneasyindex.Artifact;
-import dev.c0ps.mx.downloader.data.IngestionData;
+import dev.c0ps.mx.downloader.data.Result;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils.UrlCheck;
 
@@ -73,7 +76,7 @@ public class ArtifactFinderTest {
     }
 
     @Test
-    public void addDiableAnnotationAgain() {
+    public void addDisableAnnotationAgain() {
         fail();
     }
 
@@ -107,10 +110,21 @@ public class ArtifactFinderTest {
     }
 
     @Test
-    public void updatesReleaseDate() {
+    public void doUpdatesReleaseDateWithSmallDeviations() {
+        var orig = 1417709863000L;
+        var other = orig - 1000 * 60 * 60 * 24 + 1; // <1d
         assertFix( //
-                a(JUNIT.replace("1417709863000", "1234509863000"), CENTRAL), //
+                a(JUNIT.replace(Long.toString(orig), Long.toString(other)), CENTRAL), //
                 a(JUNIT, CENTRAL));
+    }
+
+    @Test
+    public void doNotUpdatesReleaseDateWithLargeDeviation() {
+        var orig = 1417709863000L;
+        var other = orig - 1000 * 60 * 60 * 24 - 1; // >1d
+        assertFix( //
+                a(JUNIT.replace(Long.toString(orig), Long.toString(other)), CENTRAL), //
+                a(JUNIT.replace(Long.toString(orig), Long.toString(other)), CENTRAL));
     }
 
     @Test
@@ -150,7 +164,7 @@ public class ArtifactFinderTest {
 
     @Test
     public void returnsPreviousResultIfFound() {
-        var s = new IngestionData();
+        var s = new Result();
         s.artifact = mock(Artifact.class);
         s.status = FOUND;
         when(db.get(a(JUNIT, CENTRAL))).thenReturn(s);
@@ -162,7 +176,7 @@ public class ArtifactFinderTest {
 
     @Test
     public void returnsNoPreviousResultIfRequested() {
-        var s = new IngestionData();
+        var s = new Result();
         s.artifact = mock(Artifact.class);
         s.status = REQUESTED;
         when(db.get(a(JUNIT, CENTRAL))).thenReturn(s);
@@ -174,7 +188,7 @@ public class ArtifactFinderTest {
 
     @Test
     public void checksWhenOnlyRequested() {
-        var s = new IngestionData();
+        var s = new Result();
         s.artifact = mock(Artifact.class);
         s.status = REQUESTED;
         when(db.get(a(JUNIT, CENTRAL))).thenReturn(s);
@@ -189,10 +203,35 @@ public class ArtifactFinderTest {
         verify(db).markFound(a);
     }
 
+    @Test
+    public void parseUrl() {
+        // actual poms
+        assertPackaging("https://repo.maven.apache.org/maven2/org/apache/nifi/nifi-easyrules-bundle/1.21.0/nifi-easyrules-bundle-1.21.0.pom", "pom");
+        assertPackaging("https://repo.maven.apache.org/maven2/io/github/rdlopes/maven-root-pom/1.1.9/maven-root-pom-1.1.9.pom", "pom");
+        assertPackaging("https://repo.maven.apache.org/maven2/org/ops4j/pax/web/pax-web-features/9.0.8/pax-web-features-9.0.8.pom", "pom");
+
+        // defines jar packaging
+        assertPackaging("https://repo.maven.apache.org/maven2/com/izivia/ocpp-operation-information/0.1.17/ocpp-operation-information-0.1.17.pom", "jar");
+    }
+
+    private void assertPackaging(String url, String expected) {
+        try {
+            var actual = ArtifactFinder.parsePackagingFromUrl(new URL(url));
+            assertEquals(expected, actual);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     private void assertFix(Artifact in, Artifact expected) {
         var actual = sut.findArtifact(in);
-        assertNotSame(in, actual);
         assertEquals(expected, actual);
+        if (in.equals(expected)) {
+            assertSame(in, actual);
+        } else {
+            assertNotSame(in, actual);
+        }
     }
 
     private static Artifact a(String coord, String repo) {

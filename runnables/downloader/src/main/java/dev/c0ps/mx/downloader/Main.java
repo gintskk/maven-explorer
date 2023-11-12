@@ -23,11 +23,12 @@ import org.slf4j.LoggerFactory;
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.franz.Lane;
 import dev.c0ps.maveneasyindex.Artifact;
-import dev.c0ps.mx.downloader.data.IngestionData;
-import dev.c0ps.mx.downloader.data.IngestionStatus;
+import dev.c0ps.mx.downloader.data.Result;
+import dev.c0ps.mx.downloader.data.Status;
 import dev.c0ps.mx.downloader.utils.ArtifactFinder;
-import dev.c0ps.mx.downloader.utils.ResultsDatabase;
+import dev.c0ps.mx.downloader.utils.CompletionTracker;
 import dev.c0ps.mx.downloader.utils.MavenDownloader;
+import dev.c0ps.mx.downloader.utils.ResultsDatabase;
 import dev.c0ps.mx.infra.exceptions.UnrecoverableError;
 import dev.c0ps.mx.infra.kafka.DefaultTopics;
 import dev.c0ps.mx.infra.kafka.LaneManagement;
@@ -49,9 +50,11 @@ public class Main implements Runnable {
     private final ArtifactFinder artifactFinder;
     private final MavenRepositoryUtils utils;
     private final MavenDownloader downloader;
+    private final CompletionTracker tracker;
 
     @Inject
-    public Main(TimedExecutor exec, Kafka kafka, ResultsDatabase db, LaneManagement lm, ArtifactFinder artifactFinder, MavenRepositoryUtils utils, MavenDownloader downloader) {
+    public Main(TimedExecutor exec, Kafka kafka, ResultsDatabase db, LaneManagement lm, ArtifactFinder artifactFinder, MavenRepositoryUtils utils, MavenDownloader downloader,
+            CompletionTracker tracker) {
         this.exec = exec;
         this.kafka = kafka;
         this.db = db;
@@ -59,11 +62,31 @@ public class Main implements Runnable {
         this.artifactFinder = artifactFinder;
         this.utils = utils;
         this.downloader = downloader;
+        this.tracker = tracker;
     }
 
     @Override
     public void run() {
-        kafka.subscribe(DefaultTopics.REQUESTED, Artifact.class, this::download);
+
+        kafka.subscribe(DefaultTopics.REQUESTED, Artifact.class, (a, lane) -> {
+            LOG.info("######################################## Consuming next {} record {} ...", lane, a);
+
+            if (!lm.shouldProcess(a, lane)) {
+                LOG.info("Lane management stopped further processing of artifact {} on lane {}", a, lane);
+                return;
+            }
+            lm.reportProgress(a, lane);
+
+            if (tracker.shouldSkip(a)) {
+                LOG.info("Skipping {} (has already been processed)", a);
+                return;
+            }
+            // ok to "start" tracking (=in-memory), but "done" is set after pom-analyzer
+            tracker.markStarted(a);
+
+            download(a, lane);
+        });
+
         while (true) {
             LOG.debug("Polling ...");
             kafka.poll();
@@ -72,9 +95,8 @@ public class Main implements Runnable {
 
     private void download(Artifact a, Lane lane) {
         exec.run(a, () -> {
-            LOG.info("######################################## Consuming next {} record {} ...", lane, a);
             var state = db.get(a);
-            if (state == null || state.status == IngestionStatus.REQUESTED) {
+            if (state == null || state.status == Status.REQUESTED) {
                 findAndProcess(a, lane);
             } else {
                 process(state, lane);
@@ -89,89 +111,72 @@ public class Main implements Runnable {
             var state = db.markNotFound(a);
             publishError(state);
         } else {
-            // path(a) == path(b), fixes only affect the file contents
+            // gav(a) == gav(b), fix only affects file content
             var state = db.markFound(b);
             process(state, lane);
         }
     }
 
-    private void process(IngestionData state, Lane lane) {
+    private void process(Result state, Lane lane) {
         var a = state.artifact;
-
-        if (!lm.shouldProcess(a, lane)) {
-            LOG.info("Lane management stopped further processing of artifact {} on lane {}", a, lane);
-            return;
-        }
-        lm.reportProgress(a, lane);
 
         try {
             switch (state.status) {
-            case RESOLVED:
-            case DONE:
-                continueResolvedOrDone(lane, a);
-                break;
             case NOT_FOUND:
-                // skip
-                LOG.info("Artifact {} could not be found before. Not attempting again.", a);
-                break;
             case CRASHED:
-                continueCrashed(state, lane);
+                // skip
+                publishError(state);
                 break;
             case FOUND:
                 continueFound(a, lane);
                 break;
+            case RESOLVED:
+            case DEPS_MISSING:
+            case DONE:
+                reusePreviousResult(lane, a, state.status);
+                break;
             default:
+                LOG.error("Skipping {} with unexpected status {} ...", state.artifact, state.status);
                 break;
             }
         } catch (Exception e) {
-            var s = db.markCrashed(a, e);
+            var s = db.recordCrash(a, e);
             if (s.numCrashes < MAX_TRIES_PER_COORD) {
                 // crash (and restart) ...
                 throw new UnrecoverableError("Caught an exception, throwing an exception to abort processing and retry ...", e);
             }
-            LOG.info("Third crash, giving up on {} .. publishing error and moving on.", a);
+            LOG.info("Artifact {} has now crashed {} times, giving up.", s.numCrashes, a);
             // ... or prevent endless crash loop
-            publishError(s);
+            var s2 = db.markCrashed(a);
+            publishError(s2);
         }
-    }
-
-    private void continueResolvedOrDone(Lane lane, Artifact a) {
-        var pom = utils.getLocalPomFile(a);
-        if (pom.exists()) {
-            // no processing required, just move on
-            LOG.info("Reusing cached result for artifact {} ...", a);
-            publish(a, lane);
-        } else {
-            LOG.error("Weird... {} was RESOLVED or DONE, but local pom is missing. Redownloading ...", a);
-            db.markRequested(a);
-            findAndProcess(a, lane);
-        }
-    }
-
-    private void continueCrashed(IngestionData state, Lane lane) {
-        if (state.numCrashes >= MAX_TRIES_PER_COORD) {
-            // prevent endless crash loop...
-            LOG.info("Reusing cached result for artifact {} ...", state.artifact);
-            publishError(state);
-            return;
-        }
-        // ... or repeat normal processing
-        continueFound(state.artifact, lane);
     }
 
     private void continueFound(Artifact a, Lane lane) {
-        LOG.info("Artifact {} was found, attempting to resolve it ...", a);
+        LOG.info("Artifact {} was found, attempting to download/resolve it ...", a);
         try {
             downloader.download(a);
             db.markResolved(a);
             publish(a, lane);
         } catch (ResolutionException e) {
             // this error is common, take a shortcut and prevent re-attempt
-            for (var i = 0; i < MAX_TRIES_PER_COORD - 1; i++) {
-                db.markCrashed(a, e);
-            }
-            var s = db.markCrashed(a, e);
+            db.recordCrash(a, e);
+            var s = db.markCrashed(a);
             publishError(s);
+        }
+    }
+
+    private void reusePreviousResult(Lane lane, Artifact a, Status status) {
+        var pom = utils.getLocalPomFile(a);
+        if (pom.exists()) {
+            // no processing required, just move on
+            LOG.info("Reusing cached result for artifact {} ...", a);
+            publish(a, lane);
+        } else {
+            LOG.error("Unexpected: Status of {} is {}, but local pom is missing. Redownloading ...", a, status);
+            db.reset(a);
+            db.markRequested(a);
+            findAndProcess(a, lane);
         }
     }
 
@@ -182,16 +187,17 @@ public class Main implements Runnable {
         kafka.publish(gav, a, DefaultTopics.DOWNLOADED, lane);
     }
 
-    private void publishError(IngestionData s) {
+    private void publishError(Result s) {
         switch (s.status) {
         case CRASHED:
-            LOG.error("Artifact {} has already crashed {} times. Not attempting a download again.", s.artifact, s.numCrashes);
+            LOG.error("Artifact {} has crashed, not attempting again.", s.artifact, s.numCrashes);
             break;
         case NOT_FOUND:
             LOG.error("Artifact {} could not be found. Not attempting again.", s.artifact);
             break;
         default:
-            break;
+            var msg = String.format("Unexpected status {} for {} to publish an error", s.status, s.artifact);
+            throw new IllegalStateException(msg);
         }
         var msg = new SimpleErrorMessage<Artifact>(s.artifact, s.stacktrace);
         kafka.publish(msg, DefaultTopics.DOWNLOADED, Lane.ERROR);

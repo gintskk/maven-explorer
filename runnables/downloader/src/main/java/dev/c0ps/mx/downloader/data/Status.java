@@ -15,7 +15,7 @@
  */
 package dev.c0ps.mx.downloader.data;
 
-public enum IngestionStatus {
+public enum Status {
 
     // requested through depgraph request
     REQUESTED,

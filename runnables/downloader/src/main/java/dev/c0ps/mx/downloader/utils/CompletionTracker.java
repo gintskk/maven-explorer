@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.c0ps.mx.pomanalyzer.utils;
+package dev.c0ps.mx.downloader.utils;
 
 import java.io.File;
 import java.io.IOException;

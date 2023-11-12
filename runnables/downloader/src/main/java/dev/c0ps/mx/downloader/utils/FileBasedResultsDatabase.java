@@ -16,24 +16,60 @@
 package dev.c0ps.mx.downloader.utils;
 
 import static dev.c0ps.commons.Asserts.assertNotNull;
+import static dev.c0ps.mx.downloader.data.Status.CRASHED;
+import static dev.c0ps.mx.downloader.data.Status.DEPS_MISSING;
+import static dev.c0ps.mx.downloader.data.Status.DONE;
+import static dev.c0ps.mx.downloader.data.Status.FOUND;
+import static dev.c0ps.mx.downloader.data.Status.NOT_FOUND;
+import static dev.c0ps.mx.downloader.data.Status.REQUESTED;
+import static dev.c0ps.mx.downloader.data.Status.RESOLVED;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 
+import dev.c0ps.commons.Asserts;
 import dev.c0ps.io.IoUtils;
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
-import dev.c0ps.mx.downloader.data.IngestionData;
-import dev.c0ps.mx.downloader.data.IngestionStatus;
+import dev.c0ps.mx.downloader.data.Result;
+import dev.c0ps.mx.downloader.data.Status;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.infra.utils.Version;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
 public class FileBasedResultsDatabase implements ResultsDatabase {
+
+    private static final Set<String> VALID_TRANSITIONS = new HashSet<>();
+
+    {
+        // crawler -> downloader
+        VALID_TRANSITIONS.add(transition(null, FOUND));
+        // depgraph -> downloader
+        VALID_TRANSITIONS.add(transition(null, REQUESTED));
+
+        VALID_TRANSITIONS.add(transition(REQUESTED, FOUND));
+        VALID_TRANSITIONS.add(transition(REQUESTED, NOT_FOUND));
+
+        VALID_TRANSITIONS.add(transition(FOUND, FOUND));
+        VALID_TRANSITIONS.add(transition(FOUND, CRASHED));
+        VALID_TRANSITIONS.add(transition(FOUND, RESOLVED));
+
+        VALID_TRANSITIONS.add(transition(RESOLVED, CRASHED));
+        VALID_TRANSITIONS.add(transition(RESOLVED, DEPS_MISSING));
+
+        VALID_TRANSITIONS.add(transition(DEPS_MISSING, CRASHED));
+        VALID_TRANSITIONS.add(transition(DEPS_MISSING, DONE));
+
+        VALID_TRANSITIONS.add(transition(CRASHED, CRASHED));
+        VALID_TRANSITIONS.add(transition(CRASHED, RESOLVED));
+        VALID_TRANSITIONS.add(transition(CRASHED, DEPS_MISSING));
+    }
 
     private final Version toolVersion;
     private final IoUtils io;
@@ -50,52 +86,59 @@ public class FileBasedResultsDatabase implements ResultsDatabase {
     }
 
     @Override
-    public IngestionData get(Artifact a) {
+    public Result get(Artifact a) {
         var f = f(a);
         if (!f.exists()) {
             return null;
         }
-        return io.readFromFile(f, IngestionData.class);
+        return io.readFromFile(f, Result.class);
     }
 
     @Override
-    public IngestionData markRequested(Artifact a) {
-        return update(a, d -> {
-            d.status = IngestionStatus.REQUESTED;
-        });
+    public Result markRequested(Artifact a) {
+        return update(a, true, REQUESTED);
     }
 
     @Override
-    public IngestionData markFound(Artifact a) {
-        return update(a, d -> {
-            d.status = IngestionStatus.FOUND;
-        });
+    public Result markFound(Artifact a) {
+        return update(a, true, FOUND);
     }
 
     @Override
-    public IngestionData markNotFound(Artifact a) {
-        return update(a, d -> {
-            d.status = IngestionStatus.NOT_FOUND;
-        });
+    public Result markNotFound(Artifact a) {
+        return update(a, false, NOT_FOUND);
     }
 
     @Override
-    public IngestionData markResolved(Artifact a) {
-        return update(a, d -> {
-            d.status = IngestionStatus.RESOLVED;
-        });
+    public Result markResolved(Artifact a) {
+        return update(a, false, RESOLVED);
     }
 
     @Override
-    public IngestionData markCrashed(Artifact a, Throwable t) {
+    public Result recordCrash(Artifact a, Throwable t) {
         assertNotNull(t);
         var cause = unwrapOriginalCause(t);
-        return update(a, d -> {
-            d.status = IngestionStatus.CRASHED;
-            d.numCrashes += 1;
+        return update(a, false, r -> {
+            r.numCrashes += 1;
             if (t != null) {
-                d.stacktrace = ExceptionUtils.getStackTrace(cause);
+                r.stacktrace = ExceptionUtils.getStackTrace(cause);
             }
+        });
+    }
+
+    @Override
+    public Result markCrashed(Artifact a) {
+        var old = get(a);
+        if (old.stacktrace == null) {
+            throw new IllegalStateException("Stacktrace is null in result");
+        }
+        if (old.numCrashes < 1) {
+            throw new IllegalStateException("No crash has been recorded in result");
+        }
+        return update(a, false, r -> {
+            r.status = Status.CRASHED;
+            r.numCrashes = old.numCrashes;
+            r.stacktrace = old.stacktrace;
         });
     }
 
@@ -106,38 +149,98 @@ public class FileBasedResultsDatabase implements ResultsDatabase {
     }
 
     @Override
-    public IngestionData markDepsMissing(Pom p) {
+    public Result markDepsMissing(Pom p) {
         var a = MavenRepositoryUtils.toArtifact(p);
-        return update(a, d -> {
-            d.status = IngestionStatus.DEPS_MISSING;
+        return update(a, false, d -> {
+            d.status = DEPS_MISSING;
             d.pom = p;
+            // successful transition resets crash info
+            d.numCrashes = 0;
+            d.stacktrace = null;
         });
     }
 
     @Override
-    public IngestionData markDone(Artifact a) {
-        return update(a, d -> {
-            d.status = IngestionStatus.DONE;
+    public Result markDone(Artifact a) {
+        return update(a, false, DONE);
+    }
+
+    @Override
+    public void reset(Artifact a) {
+        var f = f(a);
+        if (f.exists()) {
+            if (!f.delete()) {
+                var msg = String.format("Cannot delete completion marker of %s (%s)", a, f);
+                throw new IllegalStateException(msg);
+            }
+        }
+    }
+
+    private Result update(Artifact a, boolean shouldUpdateArtifact, Status s) {
+        return update(a, shouldUpdateArtifact, r -> {
+            r.status = s;
+            // successful transition resets crash info
+            r.numCrashes = 0;
+            r.stacktrace = null;
         });
     }
 
-    private IngestionData update(Artifact a, Consumer<IngestionData> c) {
+    private Result update(Artifact a, boolean shouldUpdateArtifact, Consumer<Result> c) {
+        Asserts.assertNotNull(a);
         var f = f(a);
+        var r = readResultOrCreateNew(f);
 
-        var d = f.exists() //
-                ? io.readFromFile(f, IngestionData.class)
-                : new IngestionData();
+        var stateBefore = r.status;
+        var numCrashesBefore = r.numCrashes;
 
-        // the artifact might have been altered, e.g., fixed packaging
-        d.artifact = a;
-        d.createdWith = d.createdWith == null //
+        c.accept(r);
+
+        var stateAfter = r.status;
+        var numCrashesAfter = r.numCrashes;
+        var wasCrash = (numCrashesAfter - numCrashesBefore > 0) && stateBefore == stateAfter;
+
+        var hasCrashedWithoutStacktrace = stateAfter == CRASHED && r.stacktrace == null;
+        if (hasCrashedWithoutStacktrace) {
+            throw new IllegalStateException("Result has CRASHED without stacktrace");
+        }
+
+        var triesToMarkKnownPackageAsRequested = stateBefore != null && stateAfter == REQUESTED && !wasCrash;
+        if (triesToMarkKnownPackageAsRequested) {
+            var msg = String.format("Cannot mark package %s as REQUESTED: was known before", a);
+            throw new IllegalStateException(msg);
+        }
+
+        if (shouldUpdateArtifact) {
+            // the artifact might have been altered, e.g., fixed packaging
+            r.artifact = a;
+        }
+
+        var t = transition(stateBefore, stateAfter);
+        boolean isInvalidStateTransition = !VALID_TRANSITIONS.contains(t) && !wasCrash;
+        if (isInvalidStateTransition) {
+            var msg = String.format("Invalid state transition for package %s: %s", a, t);
+            throw new IllegalStateException(msg);
+        }
+
+        // remember smallest version that was involved with creating this result
+        setVersionIfRequired(r);
+
+        io.writeToFile(r, f);
+
+        return r;
+    }
+
+    private Result readResultOrCreateNew(File f) {
+        var r = f.exists() //
+                ? io.readFromFile(f, Result.class)
+                : new Result();
+        return r;
+    }
+
+    private void setVersionIfRequired(Result r) {
+        r.createdWith = r.createdWith == null //
                 ? toolVersion.get()
-                : getSmaller(d.createdWith, toolVersion.get());
-
-        c.accept(d);
-        io.writeToFile(d, f);
-
-        return d;
+                : getSmaller(r.createdWith, toolVersion.get());
     }
 
     private File f(Artifact a) {
@@ -150,5 +253,9 @@ public class FileBasedResultsDatabase implements ResultsDatabase {
         return cv1.compareTo(cv2) < 1 //
                 ? v1
                 : v2;
+    }
+
+    private static String transition(Status a, Status b) {
+        return new StringBuilder().append(a).append("»").append(b).toString();
     }
 }

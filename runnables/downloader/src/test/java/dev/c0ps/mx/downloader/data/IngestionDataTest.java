@@ -35,9 +35,9 @@ public class IngestionDataTest {
 
     @Test
     public void defaults() {
-        var a = new IngestionData();
+        var a = new Result();
 
-        var b = new IngestionData();
+        var b = new Result();
         b.artifact = null;
         b.numCrashes = 0;
         b.pom = null;
@@ -50,70 +50,70 @@ public class IngestionDataTest {
 
     @Test
     public void equalDefaults() {
-        var a = new IngestionData();
-        var b = new IngestionData();
+        var a = new Result();
+        var b = new Result();
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalNonDefaults() {
-        var a = someIngestionState(A1, 2, P1, IngestionStatus.FOUND, "1.2.3");
-        var b = someIngestionState(A1, 2, P1, IngestionStatus.FOUND, "1.2.3");
+        var a = someIngestionState(A1, 2, P1, Status.FOUND, "1.2.3");
+        var b = someIngestionState(A1, 2, P1, Status.FOUND, "1.2.3");
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalDiffArtifact() {
-        var a = someIngestionState(A1, 2, P1, IngestionStatus.FOUND, "1.2.3");
-        var b = someIngestionState(A2, 2, P1, IngestionStatus.FOUND, "1.2.3");
+        var a = someIngestionState(A1, 2, P1, Status.FOUND, "1.2.3");
+        var b = someIngestionState(A2, 2, P1, Status.FOUND, "1.2.3");
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalDiffNumCrashes() {
-        var a = someIngestionState(A1, 2, P1, IngestionStatus.FOUND, "1.2.3");
-        var b = someIngestionState(A1, 3, P1, IngestionStatus.FOUND, "1.2.3");
+        var a = someIngestionState(A1, 2, P1, Status.FOUND, "1.2.3");
+        var b = someIngestionState(A1, 3, P1, Status.FOUND, "1.2.3");
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalDiffPom() {
-        var a = someIngestionState(A1, 2, P1, IngestionStatus.FOUND, "1.2.3");
-        var b = someIngestionState(A1, 2, P2, IngestionStatus.FOUND, "1.2.3");
+        var a = someIngestionState(A1, 2, P1, Status.FOUND, "1.2.3");
+        var b = someIngestionState(A1, 2, P2, Status.FOUND, "1.2.3");
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalDiffStatus() {
-        var a = someIngestionState(A1, 2, P1, IngestionStatus.FOUND, "1.2.3");
-        var b = someIngestionState(A1, 2, P1, IngestionStatus.DONE, "1.2.3");
+        var a = someIngestionState(A1, 2, P1, Status.FOUND, "1.2.3");
+        var b = someIngestionState(A1, 2, P1, Status.DONE, "1.2.3");
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalDiffVersion() {
-        var a = someIngestionState(A1, 2, P1, IngestionStatus.FOUND, "1.2.3");
-        var b = someIngestionState(A1, 2, P1, IngestionStatus.FOUND, "1.2.4");
+        var a = someIngestionState(A1, 2, P1, Status.FOUND, "1.2.3");
+        var b = someIngestionState(A1, 2, P1, Status.FOUND, "1.2.4");
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void hasToString() {
-        var actual = new IngestionData().toString();
-        assertTrue(actual.startsWith(IngestionData.class.getName() + "@"));
+        var actual = new Result().toString();
+        assertTrue(actual.startsWith(Result.class.getName() + "@"));
         assertTrue(actual.contains("\n"));
         assertTrue(actual.contains("numCrashes="));
     }
 
-    private static IngestionData someIngestionState(Artifact a, int numCrashes, Pom p, IngestionStatus s, String v) {
-        var i = new IngestionData();
+    private static Result someIngestionState(Artifact a, int numCrashes, Pom p, Status s, String v) {
+        var i = new Result();
         i.artifact = a;
         i.numCrashes = numCrashes;
         i.pom = p;

@@ -18,11 +18,13 @@ package dev.c0ps.mx.downloader.utils;
 import static java.lang.String.join;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.module.ResolutionException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.zip.ZipFile;
 
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.DefaultInvoker;
@@ -32,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.c0ps.maveneasyindex.Artifact;
+import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
@@ -49,12 +52,15 @@ public class MavenDownloader {
     private final File dirM2;
     private final File mavenHome;
 
+    private final MavenRepositoryUtils mru;
+
     @Inject
-    public MavenDownloader( //
+    public MavenDownloader(MavenRepositoryUtils mru, //
             @Named("dir.base") File baseDir, //
             @Named("dir.m2") File dirM2, //
             @Named("dir.mavenHome") File mavenHome) {
 
+        this.mru = mru;
         this.baseDir = baseDir;
         this.dirM2 = dirM2;
         this.mavenHome = mavenHome;
@@ -62,19 +68,40 @@ public class MavenDownloader {
 
     public void download(Artifact a) {
         var coord = String.format("%s:%s:%s:%s", a.groupId, a.artifactId, a.version, a.packaging);
-        download(coord, a.repository, true);
+        mvnDependencyGet(coord, a.repository, true);
 
-        for (var classifier : Set.of("sources", "javadoc")) {
-            try {
-                var sources = String.format("%s:%s:%s:jar:%s", a.groupId, a.artifactId, a.version, classifier);
-                download(sources, a.repository, false);
-            } catch (ResolutionException e) {
-                // ignore exceptions for classifier jars
+        if ("pom".equals(a.packaging)) {
+            LOG.info("Skipping download of sources/javadoc for pom.");
+        } else {
+            for (var classifier : Set.of("sources", "javadoc")) {
+                try {
+                    var f = mru.downloadToM2WithClassifier(a, classifier, "jar");
+                    if (f != null && !isValidZip(f)) {
+                        LOG.error("Deleting invalid JAR file ...");
+                        f.delete();
+                    }
+                } catch (ResolutionException e) {
+                    // ignore exceptions for classifier jars
+                }
             }
         }
     }
 
-    private void download(String coordinate, String repository, boolean includeTransitiveDeps) {
+    private boolean isValidZip(File f) {
+        try (var zf = new ZipFile(f)) {
+            var es = zf.entries();
+            if (es.hasMoreElements()) {
+                // just try to read one element to validate zip
+                es.nextElement();
+            }
+        } catch (IOException e) {
+            // ignore exception, but invalidate zip
+            return false;
+        }
+        return true;
+    }
+
+    private void mvnDependencyGet(String coordinate, String repository, boolean includeTransitiveDeps) {
         var repositories = unique(CENTRAL, repository);
         LOG.info("Downloading coordinate '{}' from repositories [{}] ...", coordinate, join(", ", repositories));
 

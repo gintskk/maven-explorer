@@ -17,23 +17,27 @@ package dev.c0ps.mx.downloader.utils;
 
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
-import dev.c0ps.mx.downloader.data.IngestionData;
+import dev.c0ps.mx.downloader.data.Result;
 
 public interface ResultsDatabase {
 
-    IngestionData get(Artifact a);
+    Result get(Artifact a);
 
-    IngestionData markRequested(Artifact a);
+    Result markRequested(Artifact a);
 
-    IngestionData markNotFound(Artifact a);
+    Result markNotFound(Artifact a);
 
-    IngestionData markFound(Artifact b);
+    Result markFound(Artifact b);
 
-    IngestionData markResolved(Artifact a);
+    Result markResolved(Artifact a);
 
-    IngestionData markCrashed(Artifact a, Throwable t);
+    Result recordCrash(Artifact a, Throwable t);
 
-    IngestionData markDepsMissing(Pom result);
+    Result markCrashed(Artifact a);
 
-    IngestionData markDone(Artifact a);
+    Result markDepsMissing(Pom result);
+
+    Result markDone(Artifact a);
+
+    void reset(Artifact a);
 }
