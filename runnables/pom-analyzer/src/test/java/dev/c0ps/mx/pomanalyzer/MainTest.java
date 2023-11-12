@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.maven.PomExtractor;
-import dev.c0ps.mx.downloader.utils.ArtifactFinder;
 import dev.c0ps.mx.downloader.utils.CompletionTracker;
 import dev.c0ps.mx.downloader.utils.ResultsDatabase;
 import dev.c0ps.mx.infra.kafka.LaneManagement;
@@ -37,7 +36,6 @@ public class MainTest {
     private PomExtractor extractor;
     private ShrinkwrapResolver resolver;
     private Kafka kafka;
-    private ArtifactFinder af;
     private TimedExecutor exec;
     private ResultsDatabase db;
     private LaneManagement lm;
@@ -52,14 +50,13 @@ public class MainTest {
         extractor = mock(PomExtractor.class);
         resolver = mock(ShrinkwrapResolver.class);
         kafka = mock(Kafka.class);
-        af = mock(ArtifactFinder.class);
         exec = mock(TimedExecutor.class);
         db = mock(ResultsDatabase.class);
         lm = mock(LaneManagement.class);
         mru = mock(MavenRepositoryUtils.class);
         tracker = mock(CompletionTracker.class);
 
-        sut = new Main(modelBuilder, extractor, resolver, kafka, af, exec, db, lm, mru, tracker, "in", "out", "requests");
+        sut = new Main(modelBuilder, extractor, resolver, kafka, exec, db, lm, mru, tracker, "in", "out", "requests");
 
 //        when(extractor.process(eq(null))).thenReturn(new Pom());
 //        when(extractor.process(any(Model.class))).thenReturn(new Pom());

@@ -66,7 +66,8 @@ public class ShrinkwrapResolver {
                 return;
             }
 
-            LOG.error("Could not identify the artifact repository for dependency {}", dep);
+            LOG.error("Could not identify the repository for {}. Deleting pom to enforce re-download ...", dep);
+            utils.getLocalPomFile(dep).delete();
             throw new NoArtifactRepositoryException(dep.toString());
         });
 

@@ -16,8 +16,8 @@
 package dev.c0ps.mx.pomanalyzer;
 
 import static dev.c0ps.commons.Asserts.assertTrue;
+import static dev.c0ps.mx.infra.utils.MavenRepositoryUtils.toGAV;
 
-import java.lang.module.ResolutionException;
 import java.time.Duration;
 import java.util.Date;
 import java.util.HashSet;
@@ -28,13 +28,14 @@ import org.jboss.shrinkwrap.resolver.api.InvalidConfigurationFileException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.c0ps.commons.Asserts;
+import dev.c0ps.commons.AssertsException;
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.franz.Lane;
 import dev.c0ps.maven.PomExtractor;
 import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.mx.downloader.data.Result;
 import dev.c0ps.mx.downloader.data.Status;
-import dev.c0ps.mx.downloader.utils.ArtifactFinder;
 import dev.c0ps.mx.downloader.utils.CompletionTracker;
 import dev.c0ps.mx.downloader.utils.ResultsDatabase;
 import dev.c0ps.mx.infra.exceptions.UnrecoverableError;
@@ -57,7 +58,6 @@ public class Main implements Runnable {
     private final PomExtractor extractor;
     private final ShrinkwrapResolver resolver;
     private final Kafka kafka;
-    private final ArtifactFinder finder;
     private final TimedExecutor timedExec;
     private final ResultsDatabase db;
     private final LaneManagement lm;
@@ -74,8 +74,8 @@ public class Main implements Runnable {
     private Set<Artifact> requeued = new HashSet<>();
 
     @Inject
-    public Main(EffectiveModelBuilder modelBuilder, PomExtractor extractor, ShrinkwrapResolver resolver, Kafka kafka, ArtifactFinder finder, TimedExecutor timedExec, ResultsDatabase db,
-            LaneManagement lm, MavenRepositoryUtils m2utils, CompletionTracker tracker, //
+    public Main(EffectiveModelBuilder modelBuilder, PomExtractor extractor, ShrinkwrapResolver resolver, Kafka kafka, TimedExecutor timedExec, ResultsDatabase db, LaneManagement lm,
+            MavenRepositoryUtils m2utils, CompletionTracker tracker, //
             @Named("kafka.topic.downloaded") String kafkaTopicIn, //
             @Named("kafka.topic.analyzed") String kafkaTopicOut, //
             @Named("kafka.topic.requested") String kafkaTopicRequested) {
@@ -83,7 +83,6 @@ public class Main implements Runnable {
         this.extractor = extractor;
         this.resolver = resolver;
         this.kafka = kafka;
-        this.finder = finder;
         this.timedExec = timedExec;
         this.db = db;
         this.lm = lm;
@@ -121,6 +120,7 @@ public class Main implements Runnable {
         startOfOrigAt = new Date();
 
         tracker.clearMemory();
+        Asserts.assertTrue(queue.isEmpty());
         queue.add(new CurrentArtifact(orig, null, orig, lane));
 
         while (!queue.isEmpty()) {
@@ -128,16 +128,20 @@ public class Main implements Runnable {
             // make sure the outer poll does not timeout
             kafka.sendHeartbeat();
 
-            var cur = queue.pop();
-            if (tracker.shouldSkip(cur.a)) {
-                LOG.info("Skipping {} (has already been processed)", cur.a);
-                return;
+            var cur = queue.poll();
+
+            if (shouldSkipOrStart(cur.a)) {
+                continue;
             }
-            tracker.markStarted(cur.a);
 
             timedExec.run(cur.id(), () -> {
                 try {
                     processOne(cur);
+                } catch (InvalidConfigurationFileException e) {
+                    LOG.error("Cannot process {}: pom.xml cannot be parsed", cur.a);
+                    db.recordCrash(cur.a, e);
+                    var s2 = db.markCrashed(cur.a);
+                    publishError(cur, s2, "invalid pom.xml");
                 } catch (Exception e) {
                     var s = db.recordCrash(cur.a, e);
                     if (s.numCrashes < MAX_TRIES_PER_COORD) {
@@ -145,58 +149,81 @@ public class Main implements Runnable {
                         throw new UnrecoverableError(e);
                     }
                     // ... or prevent endless crash loop
-                    publishError(cur, s, "caught exception");
+                    var s2 = db.markCrashed(cur.a);
+                    publishError(cur, s2, "caught exception");
                 }
             });
         }
+    }
+
+    private boolean shouldSkipOrStart(Artifact a) {
+        if (tracker.shouldSkip(a)) {
+            LOG.info("Skipping {} (has already been processed)", a);
+            return true;
+        }
+        tracker.markStarted(a);
+        return false;
     }
 
     private void processOne(CurrentArtifact cur) {
         logRuntime(cur);
 
         var s = db.get(cur.a);
+
         // dependencies do not get marked automatically
         if (s == null) {
-            s = db.markResolved(cur.a);
+            s = db.markRequested(cur.a);
+            // directly resolving transitive deps can also discover new dependencies
+            publishRequest(cur);
+            return;
         }
-
-        // directly resolving transitive deps can discover new dependencies
-        if (!hasAlreadyBeenIngested(cur, s)) {
-            publishIngestion(cur);
+        // "fixed" information might exist for previous results
+        if (shouldSkipAfterFixingInformation(cur, s)) {
             return;
         }
 
-        try {
-            switch (s.status) {
-            case CRASHED:
-                if (s.numCrashes >= MAX_TRIES_PER_COORD) {
-                    // prevent endless crash loop...
-                    publishError(cur, s, "cached");
-                    return;
-                }
-                // ... or repeat normal processing
-                continueResolved(cur);
-                break;
-            case RESOLVED:
-                continueResolved(cur);
-                break;
-            case DEPS_MISSING:
-                continueDepsMissing(cur);
-                break;
-            case DONE:
-                // handle like DEP_MISSING to ensure processing of all deps
-                continueDepsMissing(cur);
-                break;
-            default:
-                var msg = String.format("Status of %s was %s, but should be one of [CRASHED, RESOLVED, DEPS_MISSING, DONE]", s.artifact, s.status);
-                throw new IllegalStateException(msg);
-            }
-        } catch (InvalidConfigurationFileException e) {
-            LOG.error("Cannot resolve {}: pom.xml cannot be parsed", cur.a);
-            db.recordCrash(cur.a, e);
-            var s2 = db.markCrashed(cur.a);
-            publishError(cur, s2, "invalid pom.xml");
+        switch (s.status) {
+        case NOT_FOUND:
+            LOG.info("Artifact {} not found, skipping.", cur.a);
+            break;
+        case REQUESTED:
+        case FOUND:
+            // skip
+            LOG.info("Skipping {} dependency that has already been propagated back to downloading/resolution ...", s.status);
+            break;
+        case CRASHED:
+            publishError(cur, s, "cached");
+            break;
+        case RESOLVED:
+            continueResolved(cur);
+            break;
+        case DEPS_MISSING:
+            continueDepsMissing(cur);
+            break;
+        case DONE:
+            // handle like DEP_MISSING to ensure processing of all deps
+            continueDepsMissing(cur);
+            break;
+        default:
+            var msg = String.format("Unhandled status %s for %s", s.status, s.artifact);
+            throw new IllegalStateException(msg);
         }
+    }
+
+    private boolean shouldSkipAfterFixingInformation(CurrentArtifact cur, Result r) {
+        var resultContainsFix = !cur.a.equals(r.artifact);
+        if (resultContainsFix) {
+            LOG.info("Updating current artifact with cached data: {} -> {} ...", cur.a, r.artifact);
+            tracker.markAborted(cur.a);
+            if (requeued.remove(cur.a)) {
+                requeued.add(r.artifact);
+            }
+            cur.a = r.artifact;
+            if (shouldSkipOrStart(cur.a)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void logRuntime(CurrentArtifact cur) {
@@ -207,38 +234,29 @@ public class Main implements Runnable {
         LOG.info("########## (Run started at: {} / {})", startOfMainAt, mainDuration);
 
         var msg = cur.isOriginalArtifact() //
-                ? ">> Processing next original {} ..."
-                : "Processing next artifact {} ... (origin started at {} / {})";
+                ? ">> Processing original {} ..."
+                : "Processing dependency {} ... (original started at {} / {})";
         LOG.info(msg, cur.a, startOfOrigAt, origDuration);
-
-    }
-
-    private boolean hasAlreadyBeenIngested(CurrentArtifact cur, Result s) {
-        if (cur.isOriginalArtifact()) {
-            return true;
-        }
-        var pom = m2utils.getLocalPomFile(cur.a);
-        return pom.exists();
     }
 
     private void continueResolved(CurrentArtifact cur) {
 
         logContinueState(cur, Status.RESOLVED);
 
-        cur = findOrFixArtifact(cur);
-
         var pomFile = m2utils.getLocalPomFile(cur.a);
+        if (!pomFile.exists()) {
+            LOG.error("The pom file of RESOLVED artifact {} does not exist. Requesting again.", cur.a);
+            publishRequest(cur);
+            return;
+        }
+
         var m = modelBuilder.buildEffectiveModel(pomFile);
         var pom = extractor.process(m);
 
-        var found = finder.findArtifact(pom.pom());
-        if (found == null) {
-            new ResolutionException("..?!");
-        }
-
-        pom.artifactRepository = found.repository;
-        pom.packagingType = found.packaging;
-        pom.releaseDate = found.releaseDate;
+        // update information with validated information from "fixed" artifact
+        pom.artifactRepository = cur.a.repository;
+        pom.packagingType = cur.a.packaging;
+        pom.releaseDate = cur.a.releaseDate;
 
         LOG.info("Successful pom extraction for {} ...", cur.a);
         db.markDepsMissing(pom.pom());
@@ -246,29 +264,20 @@ public class Main implements Runnable {
         continueDepsMissing(cur);
     }
 
-    private void requeue(CurrentArtifact cur) {
-        queue.add(cur);
-        requeued.add(cur.a);
-        tracker.markAborted(cur.a);
-    }
-
-    private CurrentArtifact findOrFixArtifact(CurrentArtifact cur) {
-        var b = finder.findArtifact(cur.a);
-        if (cur.a.equals(b)) {
-            return cur;
-        }
-        LOG.info("Fixed artifact {} --> {}", cur.a, b);
-        return new CurrentArtifact(b, cur.parent, cur.origin, cur.lane);
-    }
-
     private void continueDepsMissing(CurrentArtifact cur) {
         logContinueState(cur, Status.DEPS_MISSING);
 
         if (requeued.contains(cur.a)) {
-            requeued.remove(cur.a);
-            LOG.info("Finishing re-queued artifact {} ...", cur.a);
-            publishResult(cur);
-            tracker.markCompleted(cur.a);
+            var shouldClose = !cur.isOriginalArtifact() || queue.isEmpty();
+            if (shouldClose) {
+                requeued.remove(cur.a);
+                LOG.info("Finishing re-queued artifact {} ...", cur.a);
+                publishResult(cur);
+                tracker.markCompleted(cur.a);
+            } else {
+                LOG.info("Found original again ({}), but queue is not empty. Re-queueing again ...", cur.a);
+                requeue(cur);
+            }
         } else {
             LOG.info("Resolving dependencies of {} ...", cur.a);
             var deps = resolver.resolveDependencies(cur.a);
@@ -286,6 +295,15 @@ public class Main implements Runnable {
             }
             requeue(cur);
         }
+    }
+
+    private void requeue(CurrentArtifact cur) {
+        if (!queue.contains(cur)) {
+            queue.add(cur);
+        }
+        requeued.add(cur.a);
+        tracker.markAborted(cur.a);
+        LOG.info("Requeued {}.", cur.a);
     }
 
     private void logContinueState(CurrentArtifact cur, Status state) {
@@ -306,7 +324,7 @@ public class Main implements Runnable {
         kafka.publish(gav, cur.a, kafkaTopicOut, cur.lane);
     }
 
-    private void publishIngestion(CurrentArtifact cur) {
+    private void publishRequest(CurrentArtifact cur) {
         LOG.info("Dependency {} will be ingested separately ...", cur.a);
         var gav = MavenRepositoryUtils.toGAV(cur.a);
         // use GAV as key to eliminate parallel/duplicate processing in multiple workers
@@ -314,13 +332,21 @@ public class Main implements Runnable {
     }
 
     private void publishError(CurrentArtifact c, Result s, String reason) {
-        assertTrue(c.a.equals(s.artifact));
+        assertShallowEquals(c.a, s.artifact);
         assertTrue(s.status == Status.CRASHED);
         var msg = c.isOriginalArtifact() //
                 ? "Pom extraction of {} has crashed for {} times ({}), not attempting again. (original)"
                 : "Pom extraction of {} has crashed for {} times ({}), not attempting again. (dep of: {}, orig: {})";
         LOG.error(msg, s.artifact, s.numCrashes, reason, c.parent, c.origin);
         kafka.publish(new SimpleErrorMessage<Artifact>(s.artifact, s.stacktrace), kafkaTopicOut, Lane.ERROR);
+    }
+
+    private void assertShallowEquals(Artifact a, Artifact b) {
+        if (!toGAV(a).equals(toGAV(b))) {
+            var msg = String.format("Publishing error for non-matching artifact/result: %s and %s", a, b);
+            LOG.warn(msg);
+            throw new AssertsException(msg);
+        }
     }
 
     private static class CurrentArtifact {
@@ -349,6 +375,25 @@ public class Main implements Runnable {
 
         public CurrentArtifact child(Artifact child) {
             return new CurrentArtifact(child, a, origin, lane);
+        }
+
+        @Override
+        public String toString() {
+            return MavenRepositoryUtils.toGAV(a);
+        }
+
+        @Override
+        public int hashCode() {
+            return a.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof CurrentArtifact) {
+                var other = (CurrentArtifact) obj;
+                return a.equals(other.a);
+            }
+            return false;
         }
     }
 }
