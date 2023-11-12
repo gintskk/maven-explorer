@@ -25,8 +25,12 @@ import static java.util.Locale.ENGLISH;
 import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
@@ -36,9 +40,12 @@ import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -54,8 +61,11 @@ import jakarta.inject.Named;
 
 public class MavenRepositoryUtils {
 
+    private static final int CONNECTION_TIMEOUT_MS = 1000 * 10; // 10s
+    private static final int READ_TIMEOUT_MS = 1000 * 60; // 1min
+
     private static final Logger LOG = LoggerFactory.getLogger(MavenRepositoryUtils.class);
-    private static final String[] ALLOWED_CLASSIFIERS = new String[] { null, "sources" };
+    private static final String[] ALLOWED_CLASSIFIERS = new String[] { null, "sources", "javadoc" };
 
     private File dirM2;
 
@@ -165,6 +175,18 @@ public class MavenRepositoryUtils {
         return s == null || s.isEmpty() || "?".equals(s);
     }
 
+    public File getM2Path(Artifact a) {
+        return getM2PathWithClassifier(a, null, a.packaging);
+    }
+
+    public File getM2PathWithClassifier(Artifact a, String classifier, String ext) {
+        var f = new File(dirM2, "repository");
+        for (var part : getPathPartsWithClassifier(a, classifier, ext)) {
+            f = new File(f, part);
+        }
+        return f;
+    }
+
     public static File getMavenFilePath(File baseDir, Artifact a) {
         return getMavenFilePath(baseDir, a, a.packaging);
     }
@@ -182,6 +204,48 @@ public class MavenRepositoryUtils {
 
     public File getMavenFilePathNonStatic(File baseDir, Artifact a) {
         return getMavenFilePathNonStatic(baseDir, a);
+    }
+
+    public URL getUrl(Artifact a) {
+        return getUrlWithClassifier(a, null, a.packaging);
+    }
+
+    public URL getUrlWithClassifier(Artifact a, String classifier, String ext) {
+        var repo = a.repository;
+        if (!repo.endsWith("/")) {
+            repo += "/";
+        }
+        var path = getUrlPathWithClassifier(a, classifier, ext);
+        try {
+            return new URL(repo + path);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getUrlPath(Artifact a) {
+        return getUrlPathWithClassifier(a, null, null);
+    }
+
+    public String getUrlPathWithClassifier(Artifact a, String classifier, String ext) {
+        var parts = getPathPartsWithClassifier(a, classifier, ext);
+        return StringUtils.join(parts, "/");
+    }
+
+    private List<String> getPathPartsWithClassifier(Artifact a, String classifier, String ext) {
+        var parts = new LinkedList<String>();
+        for (var part : a.groupId.split("\\.")) {
+            parts.add(part);
+        }
+        parts.add(a.artifactId);
+        parts.add(a.version);
+        if (classifier == null) {
+            parts.add(a.artifactId + "-" + a.version + "." + a.packaging);
+        } else {
+            parts.add(a.artifactId + "-" + a.version + "-" + classifier + "." + ext);
+        }
+
+        return parts;
     }
 
     @Deprecated
@@ -218,6 +282,43 @@ public class MavenRepositoryUtils {
                 .setRepository(pom.artifactRepository);
     }
 
+    public File downloadToM2(Artifact a) {
+        return downloadToM2WithClassifier(a, null, null);
+    }
+
+    public File downloadToM2WithClassifier(Artifact a, String classifier, String ext) {
+        var coord = classifier == null //
+                ? a.toString()
+                : String.format("%s (classifier: %s, ext: %s)", a, classifier, ext);
+        var url = getUrlWithClassifier(a, classifier, ext);
+        var f = getM2PathWithClassifier(a, classifier, ext);
+
+        if (f.exists()) {
+            LOG.info("Download of {} skipped: File exists.", coord);
+            return f;
+        }
+
+        LOG.warn("Manual downloads do not update Maven metadata, use with caution!");
+        LOG.info("Downloading {} ...", coord);
+        var start = System.currentTimeMillis();
+
+        try {
+            FileUtils.copyURLToFile(url, f, CONNECTION_TIMEOUT_MS, READ_TIMEOUT_MS);
+        } catch (UnknownHostException e) {
+            LOG.error("Unknown repository host: {}", a.repository);
+            return null;
+        } catch (FileNotFoundException e) {
+            LOG.error("Artifact not found in repository: {}", a);
+            return null;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        var end = System.currentTimeMillis();
+        LOG.info("Downloaded {}, took {}ms.", coord, end - start);
+        return f;
+    }
+
     public static class UrlCheck {
         public final String url;
         public final Date lastModified;
@@ -241,5 +342,12 @@ public class MavenRepositoryUtils {
         public String toString() {
             return ToStringBuilder.reflectionToString(this, MULTI_LINE_STYLE);
         }
+    }
+
+    public static String toGAV(Artifact a) {
+        return new StringBuilder() //
+                .append(a.groupId).append(':') //
+                .append(a.artifactId).append(':') //
+                .append(a.version).toString();
     }
 }
