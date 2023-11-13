@@ -17,6 +17,7 @@ package dev.c0ps.mx.pomanalyzer;
 
 import static dev.c0ps.commons.Asserts.assertTrue;
 import static dev.c0ps.mx.infra.utils.MavenRepositoryUtils.toGAV;
+import static java.lang.String.format;
 
 import java.time.Duration;
 import java.util.Date;
@@ -28,7 +29,6 @@ import org.jboss.shrinkwrap.resolver.api.InvalidConfigurationFileException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dev.c0ps.commons.Asserts;
 import dev.c0ps.commons.AssertsException;
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.franz.Lane;
@@ -120,7 +120,10 @@ public class Main implements Runnable {
         startOfOrigAt = new Date();
 
         tracker.clearMemory();
-        Asserts.assertTrue(queue.isEmpty());
+        if (!queue.isEmpty()) {
+            LOG.error("Tried to start {} with non-empty queue: {}", orig, queue);
+            queue.clear();
+        }
         queue.add(new CurrentArtifact(orig, null, orig, lane));
 
         while (!queue.isEmpty()) {
@@ -379,7 +382,8 @@ public class Main implements Runnable {
 
         @Override
         public String toString() {
-            return MavenRepositoryUtils.toGAV(a);
+            var gav = toGAV(a);
+            return isOriginalArtifact() ? format("«%s»", gav) : gav;
         }
 
         @Override
