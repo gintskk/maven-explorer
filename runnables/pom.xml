@@ -3,7 +3,7 @@
     <parent>
         <groupId>dev.c0ps.maven-explorer</groupId>
         <artifactId>root</artifactId>
-        <version>0.1.3-SNAPSHOT</version>
+        <version>0.1.3</version>
     </parent>
     <artifactId>runnables</artifactId>
     <packaging>pom</packaging>
@@ -21,7 +21,7 @@
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>infrastructure</artifactId>
-            <version>0.1.3-SNAPSHOT</version>
+            <version>0.1.3</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.franz</groupId>
