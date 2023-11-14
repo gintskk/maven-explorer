@@ -27,6 +27,7 @@
         <!-- cops versions -->
         <version.diapper>0.0.4</version.diapper>
         <version.commons>0.0.6</version.commons>
+        <version.commons-maven>0.0.1</version.commons-maven>
         <version.io>0.0.2</version.io>
         <version.franz>0.0.6</version.franz>
         <version.maven-easy-index>0.0.9</version.maven-easy-index>

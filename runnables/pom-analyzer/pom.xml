@@ -15,7 +15,7 @@
         <dependency>
             <groupId>dev.c0ps</groupId>
             <artifactId>commons-maven</artifactId>
-            <version>0.0.1</version>
+            <version>${version.commons-maven}</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-easy-index</groupId>
