@@ -26,7 +26,7 @@ import dev.c0ps.mx.downloader.utils.FileBasedResultsDatabase;
 import dev.c0ps.mx.downloader.utils.ResultsDatabase;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.infra.utils.Version;
-import jakarta.inject.Named;
+import com.google.inject.name.Named;
 
 @InjectorConfig
 public class Config extends InjectorConfigBase {

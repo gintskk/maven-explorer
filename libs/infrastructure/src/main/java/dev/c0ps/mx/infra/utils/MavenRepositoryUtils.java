@@ -56,8 +56,8 @@ import org.slf4j.LoggerFactory;
 import dev.c0ps.commons.Asserts;
 import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 
 public class MavenRepositoryUtils {
 

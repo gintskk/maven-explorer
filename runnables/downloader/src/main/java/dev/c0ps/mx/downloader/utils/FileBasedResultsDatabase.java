@@ -40,8 +40,8 @@ import dev.c0ps.mx.downloader.data.Result;
 import dev.c0ps.mx.downloader.data.Status;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.infra.utils.Version;
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 
 public class FileBasedResultsDatabase implements ResultsDatabase {
 

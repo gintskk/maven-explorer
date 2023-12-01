@@ -20,7 +20,7 @@ import com.google.inject.Provides;
 import dev.c0ps.diapper.AssertArgs;
 import dev.c0ps.diapper.InjectorConfig;
 import dev.c0ps.diapper.InjectorConfigBase;
-import jakarta.inject.Named;
+import com.google.inject.name.Named;
 
 @InjectorConfig
 public class MavenCrawlerInjectorConfig extends InjectorConfigBase {

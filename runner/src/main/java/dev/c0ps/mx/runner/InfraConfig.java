@@ -21,6 +21,7 @@ import static dev.c0ps.diapper.AssertArgs.notNullAndNotEmpty;
 import java.io.File;
 import java.util.Set;
 
+import com.google.inject.name.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,6 @@ import dev.c0ps.mx.infra.utils.Version;
 import dev.c0ps.mx.runner.impl.kafka.FileBasedLaneManagement;
 import dev.c0ps.mx.runner.impl.utils.HostNameImpl;
 import dev.c0ps.mx.runner.impl.utils.VersionImpl;
-import jakarta.inject.Named;
 
 @InjectorConfig
 public class InfraConfig implements IInjectorConfig {
@@ -74,6 +74,8 @@ public class InfraConfig implements IInjectorConfig {
         binder.bind(InfraArgs.class).toInstance(args);
         binder.bind(HostName.class).to(HostNameImpl.class);
         binder.bind(Version.class).to(VersionImpl.class);
+        //bind @Named("KafkaImpl.shouldAutoCommit") boolean shouldAutoCommit to args
+        binder.bind(boolean.class).annotatedWith(Named.class).toInstance(args.kafkaShouldAutoCommit);
     }
 
     @Provides

@@ -27,7 +27,7 @@ import java.nio.file.Paths;
 import dev.c0ps.diapper.AssertArgs;
 import dev.c0ps.io.IoUtils;
 import dev.c0ps.mx.indexcrawler.MavenCrawlerArgs;
-import jakarta.inject.Inject;
+import com.google.inject.Inject;
 
 public class LocalStore {
 
