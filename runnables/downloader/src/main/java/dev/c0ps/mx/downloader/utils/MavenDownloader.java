@@ -17,8 +17,7 @@ package dev.c0ps.mx.downloader.utils;
 
 import static java.lang.String.join;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.lang.module.ResolutionException;
 import java.util.HashSet;
 import java.util.List;
@@ -26,10 +25,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipFile;
 
-import org.apache.maven.shared.invoker.DefaultInvocationRequest;
-import org.apache.maven.shared.invoker.DefaultInvoker;
-import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.apache.maven.shared.invoker.PrintStreamHandler;
+import org.apache.maven.shared.invoker.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +95,41 @@ public class MavenDownloader {
             return false;
         }
         return true;
+    }
+
+    public int checkDependencies(Artifact a, OutputStream out) {
+        var coord = String.format("%s:%s:%s:%s", a.groupId, a.artifactId, a.version, a.packaging);
+        return mvnDependencyGet(coord, a.repository, true, out);
+    }
+
+    private int mvnDependencyGet(String coordinate, String repository, boolean includeTransitiveDeps, OutputStream out) {
+        var repositories = unique(CENTRAL, repository);
+        LOG.info("Downloading coordinate '{}' from repositories [{}] ...", coordinate, join(", ", repositories));
+
+        try {
+
+            var props = new Properties();
+            props.setProperty("artifact", coordinate);
+            props.setProperty("remoteRepositories", join(",", repositories));
+            props.setProperty("transitive", Boolean.toString(includeTransitiveDeps));
+
+            var req = new DefaultInvocationRequest();
+
+            req.setOutputHandler(new PrintStreamHandler(new PrintStream(out), true));
+            req.setGoals(List.of("dependency:get"));
+            req.setProperties(props);
+            req.setBatchMode(true);
+
+            var invoker = new DefaultInvoker();
+            invoker.setWorkingDirectory(baseDir);
+            invoker.setMavenHome(mavenHome);
+            invoker.setLocalRepositoryDirectory(new File(dirM2, "repository"));
+            var res = invoker.execute(req);
+            return res.getExitCode();
+
+        } catch (MavenInvocationException e) {
+            throw new ResolutionException(e);
+        }
     }
 
     private void mvnDependencyGet(String coordinate, String repository, boolean includeTransitiveDeps) {
