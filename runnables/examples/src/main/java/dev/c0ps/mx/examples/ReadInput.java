@@ -27,7 +27,7 @@ import dev.c0ps.diapper.AssertArgs;
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.franz.Lane;
 import dev.c0ps.mx.examples.data.SomeInputData;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 public class ReadInput implements Runnable {
 

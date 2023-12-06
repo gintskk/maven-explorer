@@ -39,7 +39,7 @@ import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.pomanalyzer.exceptions.MissingPomFileException;
 import dev.c0ps.mx.pomanalyzer.exceptions.NoArtifactRepositoryException;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 public class ShrinkwrapResolver {
 

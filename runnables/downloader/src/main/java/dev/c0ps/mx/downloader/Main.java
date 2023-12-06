@@ -35,7 +35,7 @@ import dev.c0ps.mx.infra.kafka.LaneManagement;
 import dev.c0ps.mx.infra.kafka.SimpleErrorMessage;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.infra.utils.TimedExecutor;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 public class Main implements Runnable {
 

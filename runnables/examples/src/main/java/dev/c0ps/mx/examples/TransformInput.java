@@ -18,7 +18,7 @@ package dev.c0ps.mx.examples;
 import dev.c0ps.diapper.AssertArgs;
 import dev.c0ps.franz.Kafka;
 import dev.c0ps.mx.examples.data.SomeInputData;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 public class TransformInput implements Runnable {
 

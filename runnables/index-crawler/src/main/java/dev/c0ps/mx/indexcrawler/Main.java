@@ -20,7 +20,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import java.util.concurrent.Executors;
 
 import dev.c0ps.mx.indexcrawler.utils.IndexProcessor;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 public class Main implements Runnable {
 

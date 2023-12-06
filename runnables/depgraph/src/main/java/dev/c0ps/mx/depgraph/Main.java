@@ -36,7 +36,7 @@ import dev.c0ps.maven.rest.DependencyGraphResolutionService;
 import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.mx.downloader.utils.ResultsDatabase;
 import dev.c0ps.mx.infra.kafka.DefaultTopics;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 public class Main implements Runnable {
 

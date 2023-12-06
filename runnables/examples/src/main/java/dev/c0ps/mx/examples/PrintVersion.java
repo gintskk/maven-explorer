@@ -16,7 +16,7 @@
 package dev.c0ps.mx.examples;
 
 import dev.c0ps.mx.infra.utils.Version;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 public class PrintVersion implements Runnable {
 

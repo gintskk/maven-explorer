@@ -33,7 +33,7 @@ import dev.c0ps.maven.data.Pom;
 import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.mx.downloader.data.Status;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 public class ArtifactFinder {
 

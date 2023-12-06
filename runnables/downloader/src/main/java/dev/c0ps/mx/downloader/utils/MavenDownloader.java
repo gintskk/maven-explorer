@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 
 import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 public class MavenDownloader {
 

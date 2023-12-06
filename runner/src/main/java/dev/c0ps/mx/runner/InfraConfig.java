@@ -21,7 +21,7 @@ import static dev.c0ps.diapper.AssertArgs.notNullAndNotEmpty;
 import java.io.File;
 import java.util.Set;
 
-import com.google.inject.name.Named;
+import jakarta.inject.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

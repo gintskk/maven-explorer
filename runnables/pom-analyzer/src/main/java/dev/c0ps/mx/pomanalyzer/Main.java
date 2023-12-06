@@ -45,8 +45,8 @@ import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import dev.c0ps.mx.infra.utils.TimedExecutor;
 import dev.c0ps.mx.pomanalyzer.utils.EffectiveModelBuilder;
 import dev.c0ps.mx.pomanalyzer.utils.ShrinkwrapResolver;
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 public class Main implements Runnable {
 
