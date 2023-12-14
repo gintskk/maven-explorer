@@ -43,6 +43,8 @@ import jakarta.inject.Inject;
 
 public class ShrinkwrapResolver {
 
+    private static final String CENTRAL = "https://repo.maven.apache.org/maven2/";
+
     // Attention: Be aware that the test suite for this class is disabled by default
     // to avoid unnecessary downloads on every build. Make sure to re-enable the
     // tests and run them locally for every change in this class.
@@ -66,8 +68,13 @@ public class ShrinkwrapResolver {
                 return;
             }
 
-            LOG.error("Could not identify the repository for {}. Deleting pom to enforce re-download ...", dep);
-            utils.getLocalPomFile(dep).delete();
+            dep.repository = CENTRAL;
+            var check = utils.checkGetRequestNonStatic(dep);
+            if (check.url != null) {
+                deps.add(dep);
+                return;
+            }
+
             throw new NoArtifactRepositoryException(dep.toString());
         });
 

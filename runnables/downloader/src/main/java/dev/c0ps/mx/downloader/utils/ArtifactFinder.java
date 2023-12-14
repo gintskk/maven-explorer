@@ -48,11 +48,6 @@ public class ArtifactFinder {
     private static final int ONE_HOUR_MS = 1000 * 60 * 60;
     private static final int ONE_DAY_MS = ONE_HOUR_MS * 24;
 
-    private static final String HTTPS_CENTRAL = "https://repo.maven.apache.org/maven2/";
-    private static final String HTTP_CENTRAL = "http://repo.maven.apache.org/maven2/";
-    private static final String HTTPS_CENTRAL_OLD = "https://repo1.maven.org/maven2/";
-    private static final String HTTP_CENTRAL_OLD = "http://repo1.maven.org/maven2/";
-
     private static final String[] PACKAGING_TYPES = new String[] { "jar", "war", "ear", "aar", "ejb" };
 
     private final ResultsDatabase db;
@@ -149,11 +144,6 @@ public class ArtifactFinder {
             }
         }
 
-        fix = tryProtocolReplace(a, "http://", "https://");
-        if (fix != null) {
-            return fix;
-        }
-
         fix = tryProtocolReplace(a, "https://", "http://");
         if (fix != null) {
             return fix;
@@ -175,28 +165,11 @@ public class ArtifactFinder {
     private static Artifact cloneWithBasicFixes(Artifact orig) {
         var a = orig.clone();
 
-        // basic fixes
-        ensureRepositoryEndWithSlash(a);
-        replaceOldReferencesToMavenCentral(a);
+        a.repository = RepositoryUrlFixer.fixRepoUrl(a.repository);
         if (orig.equals(a)) {
             a = orig;
         }
         return a;
-    }
-
-    private static void ensureRepositoryEndWithSlash(Artifact a) {
-        if (!a.repository.endsWith("/")) {
-            a.repository += "/";
-        }
-    }
-
-    private static void replaceOldReferencesToMavenCentral(Artifact a) {
-        if (HTTP_CENTRAL.equals(a.repository) //
-                || HTTP_CENTRAL_OLD.equals(a.repository) //
-                || HTTPS_CENTRAL_OLD.equals(a.repository)) {
-            LOG.info("Updating old Maven Central reference: {}", a.repository);
-            a.repository = HTTPS_CENTRAL;
-        }
     }
 
     private Artifact tryFix(Artifact a, String msg, Consumer<Artifact> fixer) {
