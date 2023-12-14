@@ -69,6 +69,10 @@ public class FileBasedResultsDatabase implements ResultsDatabase {
         VALID_TRANSITIONS.add(transition(CRASHED, CRASHED));
         VALID_TRANSITIONS.add(transition(CRASHED, RESOLVED));
         VALID_TRANSITIONS.add(transition(CRASHED, DEPS_MISSING));
+
+        // finished from cache
+        VALID_TRANSITIONS.add(transition(NOT_FOUND, NOT_FOUND));
+        VALID_TRANSITIONS.add(transition(DONE, DONE));
     }
 
     private final Version toolVersion;
