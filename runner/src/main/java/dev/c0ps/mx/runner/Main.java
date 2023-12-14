@@ -16,7 +16,6 @@
 package dev.c0ps.mx.runner;
 
 import dev.c0ps.diapper.Runner;
-import dev.c0ps.diapper.VmArgs;
 
 public class Main {
 
@@ -25,7 +24,6 @@ public class Main {
     }
 
     public static void main(String[] rawArgs) {
-        VmArgs.log(rawArgs);
         var runner = new Runner(new LogSettings(), "dev.c0ps.mx");
         runner.run(rawArgs);
     }
