@@ -29,5 +29,13 @@
             <artifactId>data</artifactId>
             <version>${version.maven-easy-index}</version>
         </dependency>
+
+        <!-- kafka -->
+
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.6.1</version>
+        </dependency>
     </dependencies>
 </project>
