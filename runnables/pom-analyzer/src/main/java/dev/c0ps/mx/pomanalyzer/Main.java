@@ -137,26 +137,31 @@ public class Main implements Runnable {
                 continue;
             }
 
-            timedExec.run(cur.id(), () -> {
-                try {
+            try {
+                timedExec.run(cur.id(), () -> {
                     processOne(cur);
-                } catch (InvalidConfigurationFileException e) {
-                    LOG.error("Cannot process {}: pom.xml cannot be parsed", cur.a);
-                    db.recordCrash(cur.a, e);
-                    var s2 = db.markCrashed(cur.a);
-                    publishError(cur, s2, "invalid pom.xml");
-                } catch (Exception e) {
-                    var s = db.recordCrash(cur.a, e);
-                    if (s.numCrashes < MAX_TRIES_PER_COORD) {
-                        // crash (and restart) ...
-                        throw new UnrecoverableError(e);
-                    }
-                    // ... or prevent endless crash loop
-                    var s2 = db.markCrashed(cur.a);
-                    publishError(cur, s2, "caught exception");
-                }
-            });
+                });
+            } catch (InvalidConfigurationFileException e) {
+                LOG.error("Cannot process {}: pom.xml cannot be parsed", cur.a);
+                db.recordCrash(cur.a, e);
+                var s2 = db.markCrashed(cur.a);
+                publishError(cur, s2, "invalid pom.xml");
+            } catch (Exception e) {
+                handleCrash(cur, e);
+            }
         }
+    }
+
+    private void handleCrash(CurrentArtifact cur, Throwable t) {
+        var s = db.recordCrash(cur.a, t);
+        if (s.numCrashes < MAX_TRIES_PER_COORD) {
+            // crash (and restart) ...
+            throw new UnrecoverableError(t);
+        }
+        // ... or prevent endless crash loop
+        LOG.info("Artifact {} has now crashed {} times, giving up.", s.numCrashes, cur.a);
+        var s2 = db.markCrashed(cur.a);
+        publishError(cur, s2, "caught exception");
     }
 
     private boolean shouldSkipOrStart(Artifact a) {

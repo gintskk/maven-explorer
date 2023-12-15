@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
 
-import dev.c0ps.mx.infra.exceptions.ExecutionTimeoutError;
+import dev.c0ps.mx.infra.exceptions.ExecutionTimeoutException;
 import dev.c0ps.mx.infra.exceptions.UnrecoverableError;
 
 public class TimedExecutorTest {
@@ -44,7 +44,7 @@ public class TimedExecutorTest {
 
         var max = IS_OS_WINDOWS ? 1000 : 50;
         assertMaxDuration(max, () -> {
-            var e = assertThrows(ExecutionTimeoutError.class, () -> {
+            var e = assertThrows(ExecutionTimeoutException.class, () -> {
                 sut.run("XYZ", takes(100));
             });
             assertEquals("Execution timeout after 10ms: XYZ", e.getMessage());

@@ -43,7 +43,7 @@ public class Main implements Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
-    private final TimedExecutor exec;
+    private final TimedExecutor timedExec;
     private final Kafka kafka;
     private final ResultsDatabase db;
     private final LaneManagement lm;
@@ -55,7 +55,7 @@ public class Main implements Runnable {
     @Inject
     public Main(TimedExecutor exec, Kafka kafka, ResultsDatabase db, LaneManagement lm, ArtifactFinder artifactFinder, MavenRepositoryUtils utils, MavenDownloader downloader,
             CompletionTracker tracker) {
-        this.exec = exec;
+        this.timedExec = exec;
         this.kafka = kafka;
         this.db = db;
         this.lm = lm;
@@ -94,14 +94,26 @@ public class Main implements Runnable {
     }
 
     private void download(Artifact a, Lane lane) {
-        exec.run(a, () -> {
-            var state = db.get(a);
-            if (state == null || state.status == Status.REQUESTED) {
-                findAndProcess(a, lane);
-            } else {
-                process(state, lane);
+        try {
+            timedExec.run(a, () -> {
+                var state = db.get(a);
+                if (state == null || state.status == Status.REQUESTED) {
+                    findAndProcess(a, lane);
+                } else {
+                    process(state, lane);
+                }
+            });
+        } catch (Exception e) {
+            var s = db.recordCrash(a, e);
+            if (s.numCrashes < MAX_TRIES_PER_COORD) {
+                // crash (and restart) ...
+                throw new UnrecoverableError(e);
             }
-        });
+            // ... or prevent endless crash loop
+            LOG.info("Artifact {} has now crashed {} times, giving up.", s.numCrashes, a);
+            var s2 = db.markCrashed(a);
+            publishError(s2);
+        }
     }
 
     private void findAndProcess(Artifact a, Lane lane) {
@@ -120,35 +132,23 @@ public class Main implements Runnable {
     private void process(Result state, Lane lane) {
         var a = state.artifact;
 
-        try {
-            switch (state.status) {
-            case NOT_FOUND:
-            case CRASHED:
-                // skip
-                publishError(state);
-                break;
-            case FOUND:
-                continueFound(a, lane);
-                break;
-            case RESOLVED:
-            case DEPS_MISSING:
-            case DONE:
-                reusePreviousResult(lane, a, state.status);
-                break;
-            default:
-                LOG.error("Skipping {} with unexpected status {} ...", state.artifact, state.status);
-                break;
-            }
-        } catch (Exception e) {
-            var s = db.recordCrash(a, e);
-            if (s.numCrashes < MAX_TRIES_PER_COORD) {
-                // crash (and restart) ...
-                throw new UnrecoverableError("Caught an exception, throwing an exception to abort processing and retry ...", e);
-            }
-            LOG.info("Artifact {} has now crashed {} times, giving up.", s.numCrashes, a);
-            // ... or prevent endless crash loop
-            var s2 = db.markCrashed(a);
-            publishError(s2);
+        switch (state.status) {
+        case NOT_FOUND:
+        case CRASHED:
+            // skip
+            publishError(state);
+            break;
+        case FOUND:
+            continueFound(a, lane);
+            break;
+        case RESOLVED:
+        case DEPS_MISSING:
+        case DONE:
+            reusePreviousResult(lane, a, state.status);
+            break;
+        default:
+            LOG.error("Skipping {} with unexpected status {} ...", state.artifact, state.status);
+            break;
         }
     }
 
