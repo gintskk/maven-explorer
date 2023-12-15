@@ -4,7 +4,7 @@
     <parent>
         <groupId>dev.c0ps.maven-explorer</groupId>
         <artifactId>root</artifactId>
-        <version>0.1.5</version>
+        <version>0.1.6-SNAPSHOT</version>
     </parent>
     <artifactId>runner</artifactId>
 
@@ -107,37 +107,37 @@
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>infrastructure</artifactId>
-            <version>0.1.5</version>
+            <version>0.1.6-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>examples</artifactId>
-            <version>0.1.5</version>
+            <version>0.1.6-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>index-crawler</artifactId>
-            <version>0.1.5</version>
+            <version>0.1.6-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>downloader</artifactId>
-            <version>0.1.5</version>
+            <version>0.1.6-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>m2-cleanup</artifactId>
-            <version>0.1.5</version>
+            <version>0.1.6-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>pom-analyzer</artifactId>
-            <version>0.1.5</version>
+            <version>0.1.6-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>depgraph</artifactId>
-            <version>0.1.5</version>
+            <version>0.1.6-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
