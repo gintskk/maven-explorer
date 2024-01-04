@@ -17,7 +17,10 @@ package dev.c0ps.mx.downloader.utils;
 
 import static java.lang.String.join;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.module.ResolutionException;
 import java.util.HashSet;
 import java.util.List;
@@ -25,11 +28,14 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipFile;
 
-import org.apache.maven.shared.invoker.*;
+import dev.c0ps.maveneasyindex.Artifact;
+import org.apache.maven.shared.invoker.DefaultInvocationRequest;
+import org.apache.maven.shared.invoker.DefaultInvoker;
+import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.apache.maven.shared.invoker.PrintStreamHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dev.c0ps.maveneasyindex.Artifact;
 import dev.c0ps.mx.infra.utils.MavenRepositoryUtils;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;

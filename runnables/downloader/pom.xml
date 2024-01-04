@@ -45,5 +45,11 @@
             <artifactId>commons-maven</artifactId>
             <version>${version.commons-maven}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-invoker</artifactId>
+            <version>3.2.0</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>
