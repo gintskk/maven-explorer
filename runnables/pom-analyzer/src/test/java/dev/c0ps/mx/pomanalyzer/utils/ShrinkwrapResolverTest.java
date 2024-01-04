@@ -71,7 +71,7 @@ public class ShrinkwrapResolverTest {
         var e = assertThrows(MissingPomFileException.class, () -> {
             sut.resolveDependencies(a);
         });
-        assertEquals("Local .m2 folder does not contain a pom file for g:a:v:null:0@null", e.getMessage());
+        assertEquals("Local .m2 folder does not contain a pom file for g:a:v:null:0@CENTRAL", e.getMessage());
     }
 
     @Test

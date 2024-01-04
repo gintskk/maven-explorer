@@ -1,5 +1,5 @@
 /*
- * FASTEN Notice:
+ * Maven Explorer Notice:
  * Duplicate of the original file to get access to the "artifactRepositories".
  * This is a very ugly hack that uses class shadowing!
  * 

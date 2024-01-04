@@ -158,6 +158,12 @@ public class InfraConfig implements IInjectorConfig {
     }
 
     @Provides
+    @Named("kafka.url")
+    public String provideKafkaUrl() {
+        return args.kafkaUrl;
+    }
+
+    @Provides
     @Named("kafka.topic.requested")
     public String provideKafkaTopicRequested() {
         notNullAndNotEmpty(args, a -> a.kafkaTopicRequested, "kafka.topic.requested");

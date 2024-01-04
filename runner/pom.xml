@@ -4,7 +4,7 @@
     <parent>
         <groupId>dev.c0ps.maven-explorer</groupId>
         <artifactId>root</artifactId>
-        <version>0.1.5-SNAPSHOT</version>
+        <version>0.1.7-SNAPSHOT</version>
     </parent>
     <artifactId>runner</artifactId>
 
@@ -13,17 +13,17 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.15.2</version>
+                <version>${version.jackson}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.15.2</version>
+                <version>${version.jackson}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>2.15.2</version>
+                <version>${version.jackson}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -61,7 +61,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.4.1</version>
+            <version>42.7.1</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.diapper</groupId>
@@ -71,7 +71,7 @@
         <dependency>
             <groupId>dev.c0ps</groupId>
             <artifactId>commons-maven</artifactId>
-            <version>0.0.1</version>
+            <version>${version.commons-maven}</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.io</groupId>
@@ -81,7 +81,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.13.0</version>
+            <version>2.15.1</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-easy-index</groupId>
@@ -107,37 +107,37 @@
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>infrastructure</artifactId>
-            <version>0.1.5-SNAPSHOT</version>
+            <version>0.1.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>examples</artifactId>
-            <version>0.1.5-SNAPSHOT</version>
+            <version>0.1.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>index-crawler</artifactId>
-            <version>0.1.5-SNAPSHOT</version>
+            <version>0.1.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>downloader</artifactId>
-            <version>0.1.5-SNAPSHOT</version>
+            <version>0.1.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>m2-cleanup</artifactId>
-            <version>0.1.5-SNAPSHOT</version>
+            <version>0.1.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>pom-analyzer</artifactId>
-            <version>0.1.5-SNAPSHOT</version>
+            <version>0.1.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>depgraph</artifactId>
-            <version>0.1.5-SNAPSHOT</version>
+            <version>0.1.7-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

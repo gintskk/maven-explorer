@@ -4,7 +4,7 @@
     <parent>
         <groupId>dev.c0ps.maven-explorer</groupId>
         <artifactId>runnables</artifactId>
-        <version>0.1.5-SNAPSHOT</version>
+        <version>0.1.7-SNAPSHOT</version>
     </parent>
     <artifactId>depgraph</artifactId>
 
@@ -12,12 +12,12 @@
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>downloader</artifactId>
-            <version>0.1.5-SNAPSHOT</version>
+            <version>0.1.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps</groupId>
             <artifactId>commons-maven</artifactId>
-            <version>0.0.1</version>
+            <version>${version.commons-maven}</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps</groupId>
@@ -28,6 +28,14 @@
             <groupId>dev.c0ps.maven-easy-index</groupId>
             <artifactId>data</artifactId>
             <version>${version.maven-easy-index}</version>
+        </dependency>
+
+        <!-- kafka -->
+
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.6.1</version>
         </dependency>
     </dependencies>
 </project>

@@ -15,19 +15,19 @@
  */
 package dev.c0ps.mx.infra.exceptions;
 
-public class ExecutionTimeoutError extends UnrecoverableError {
+public class ExecutionTimeoutException extends RuntimeException {
 
     private static final long serialVersionUID = -8751727696511990784L;
 
-    public ExecutionTimeoutError(String msg) {
+    public ExecutionTimeoutException(String msg) {
         super(msg);
     }
 
-    public ExecutionTimeoutError(Throwable t) {
+    public ExecutionTimeoutException(Throwable t) {
         super(t);
     }
 
-    public ExecutionTimeoutError(String msg, Throwable t) {
+    public ExecutionTimeoutException(String msg, Throwable t) {
         super(msg, t);
     }
 }

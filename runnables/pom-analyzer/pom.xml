@@ -4,7 +4,7 @@
     <parent>
         <groupId>dev.c0ps.maven-explorer</groupId>
         <artifactId>runnables</artifactId>
-        <version>0.1.5-SNAPSHOT</version>
+        <version>0.1.7-SNAPSHOT</version>
     </parent>
     <artifactId>pom-analyzer</artifactId>
 
@@ -15,7 +15,7 @@
         <dependency>
             <groupId>dev.c0ps</groupId>
             <artifactId>commons-maven</artifactId>
-            <version>0.0.1</version>
+            <version>${version.commons-maven}</version>
         </dependency>
         <dependency>
             <groupId>dev.c0ps.maven-easy-index</groupId>
@@ -30,7 +30,7 @@
         <dependency>
             <groupId>dev.c0ps.maven-explorer</groupId>
             <artifactId>downloader</artifactId>
-            <version>0.1.5-SNAPSHOT</version>
+            <version>0.1.7-SNAPSHOT</version>
         </dependency>
 
         <!-- maven -->
@@ -83,13 +83,23 @@
             <artifactId>shrinkwrap-resolver-spi</artifactId>
             <version>3.2.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.shrinkwrap.resolver</groupId>
+            <artifactId>shrinkwrap-resolver-spi-maven</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-util</artifactId>
+            <version>1.9.13</version>
+        </dependency>
 
         <!-- other -->
 
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.13.0</version>
+            <version>2.15.1</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
@@ -106,7 +116,7 @@
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <configuration>
                         <!-- please note that this overrides the parent, double check that nothing is missing -->
-                        <excludes>**/target/**,**/MavenResolvedArtifactImpl.java,**/RepositoryModelResolver.java</excludes>
+                        <excludes>**/target/**,**/MavenResolvedArtifactImpl.java,**/RepositoryModelResolver.java,**/MavenConverter.java</excludes>
                     </configuration>
                 </plugin>
             </plugins>

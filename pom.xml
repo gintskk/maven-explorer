@@ -4,12 +4,12 @@
     <parent>
         <groupId>dev.c0ps</groupId>
         <artifactId>parent</artifactId>
-        <version>0.0.5</version>
+        <version>0.0.6</version>
     </parent>
 
     <groupId>dev.c0ps.maven-explorer</groupId>
     <artifactId>root</artifactId>
-    <version>0.1.5-SNAPSHOT</version>
+    <version>0.1.7-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -20,18 +20,22 @@
 
     <properties>
         <!-- automatically set through: mvn versions:set -DupdateBuildOutputTimestampPolicy=always -DnewVersion=... -->
-        <project.build.outputTimestamp>2023-11-13T22:59:05Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2023-12-15T03:21:40Z</project.build.outputTimestamp>
 
-        <version.maven>3.9.5</version.maven>
+        <version.maven>3.9.6</version.maven>
 
         <!-- cops versions -->
-        <version.diapper>0.0.4</version.diapper>
+        <version.diapper>0.0.5</version.diapper>
         <version.commons>0.0.6</version.commons>
+        <version.commons-maven>0.0.2</version.commons-maven>
         <version.io>0.0.2</version.io>
-        <version.franz>0.0.6</version.franz>
+        <version.franz>0.0.7</version.franz>
         <version.maven-easy-index>0.0.9</version.maven-easy-index>
         <version.libhttpd>0.0.2</version.libhttpd>
         <version.testutils>0.0.6</version.testutils>
+
+        <!-- other versions -->
+        <version.jackson>2.16.0</version.jackson>
     </properties>
 
     <repositories>
@@ -43,6 +47,7 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- org.apache.maven -->
             <dependency>
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-artifact</artifactId>
@@ -78,6 +83,27 @@
                 <artifactId>maven-repository-metadata</artifactId>
                 <version>${version.maven}</version>
             </dependency>
+            <!-- jackson -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${version.jackson}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${version.jackson}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${version.jackson}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-module-jakarta-xmlbind-annotations</artifactId>
+                <version>${version.jackson}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -98,7 +124,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.13.0</version>
+            <version>3.14.0</version>
         </dependency>
         <!-- rest support for plugins -->
         <dependency>
@@ -123,7 +149,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.13.0</version>
+            <version>2.15.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

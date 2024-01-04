@@ -67,6 +67,8 @@ public class Main implements Runnable {
     @Override
     public void run() {
         server.register(DependencyGraphResolutionService.class);
+        server.register(PomService.class);
+        server.register(KafkaStatsService.class);
         server.start();
 
         LOG.info("Storage location for poms: {}", dbFile());

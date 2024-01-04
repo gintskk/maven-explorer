@@ -23,7 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import dev.c0ps.mx.infra.exceptions.ExecutionTimeoutError;
+import dev.c0ps.mx.infra.exceptions.ExecutionTimeoutException;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
@@ -48,7 +48,7 @@ public class TimedExecutor {
             future.get(timeoutMS, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             var msg = "Execution timeout after %dms: %s";
-            throw new ExecutionTimeoutError(format(msg, timeoutMS, execId));
+            throw new ExecutionTimeoutException(format(msg, timeoutMS, execId));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (ExecutionException e) {

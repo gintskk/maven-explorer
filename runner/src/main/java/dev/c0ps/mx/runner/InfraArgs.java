@@ -84,5 +84,26 @@ public class InfraArgs {
     public File dirResults;
 
     @Parameter(names = "--dir.mavenHome", arity = 1)
-    public File dirMavenHome = new File("/usr/share/maven/");
+    public File dirMavenHome = file("MAVEN_HOME");
+
+    // utilities
+
+    private static File file(String key) {
+        var val = findInEnvAndProperties(key);
+        return val != null //
+                ? new File(val)
+                : null;
+    }
+
+    private static String findInEnvAndProperties(String key) {
+        var env = System.getenv(key);
+        if (env != null) {
+            return env;
+        }
+        var prop = System.getProperty(key);
+        if (prop != null) {
+            return prop;
+        }
+        return null;
+    }
 }
